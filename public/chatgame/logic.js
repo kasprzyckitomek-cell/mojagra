@@ -30,14 +30,14 @@ export function mulberry32(a) {
 }
 
 export const ZONES = [
-  { name: 'Dzielnica Neonów', color: '#ff2bd6', color2: '#00e5ff' },
-  { name: 'Zaułki Deszczu', color: '#2b8cff', color2: '#7cf7ff' },
-  { name: 'Fabryka Dronów', color: '#ff9a1f', color2: '#ff3b3b' },
-  { name: 'Szyby Wentylacyjne', color: '#39ff88', color2: '#00b3ff' },
-  { name: 'Giełda Danych', color: '#ffe600', color2: '#ff2bd6' },
-  { name: 'Katedra Serwerów', color: '#a855ff', color2: '#00ffd5' },
-  { name: 'Lodowa Sieć', color: '#9fe8ff', color2: '#ffffff' },
-  { name: 'Rdzeń', color: '#ff1744', color2: '#ffd1dc' },
+  { name: 'Neon District', color: '#ff2bd6', color2: '#00e5ff' },
+  { name: 'Rain Alleys', color: '#2b8cff', color2: '#7cf7ff' },
+  { name: 'Drone Factory', color: '#ff9a1f', color2: '#ff3b3b' },
+  { name: 'Vent Shafts', color: '#39ff88', color2: '#00b3ff' },
+  { name: 'Data Exchange', color: '#ffe600', color2: '#ff2bd6' },
+  { name: 'Server Cathedral', color: '#a855ff', color2: '#00ffd5' },
+  { name: 'Ice Net', color: '#9fe8ff', color2: '#ffffff' },
+  { name: 'The Core', color: '#ff1744', color2: '#ffd1dc' },
 ];
 
 const BASE = {
@@ -336,13 +336,13 @@ export function applyTick(map, state, cmd, rng = Math.random) {
 }
 
 export const EVENT_TYPES = {
-  cofniecie: { title: 'AWARIA SIECI', desc: 'Cofnięcie o kilka pól!' },
-  jackpot: { title: 'JACKPOT', desc: 'Teleport do przodu!' },
-  blackout: { title: 'BLACKOUT', desc: 'Sterowanie odwrócone!' },
-  burza: { title: 'BURZA DANYCH', desc: 'Kratki szaleją!' },
-  zamrozenie: { title: 'ZAMROŻENIE', desc: 'System zawieszony na 30 s' },
-  tarcza: { title: 'TARCZA', desc: '+1 tarcza ochronna' },
-  sabotaz: { title: 'SABOTAŻ', desc: 'Kratki przed nami pod napięciem!' },
+  cofniecie: { title: 'NETWORK FAILURE', desc: 'Thrown back several tiles!' },
+  jackpot: { title: 'JACKPOT', desc: 'Teleport forward!' },
+  blackout: { title: 'BLACKOUT', desc: 'Controls reversed!' },
+  burza: { title: 'DATA STORM', desc: 'The tiles go haywire!' },
+  zamrozenie: { title: 'FREEZE', desc: 'System frozen for 30 s' },
+  tarcza: { title: 'SHIELD', desc: '+1 protective shield' },
+  sabotaz: { title: 'SABOTAGE', desc: 'Tiles ahead are electrified!' },
 };
 export function pickEvent(rng, state) {
   const w = { cofniecie: 25, jackpot: 10, blackout: 15, burza: 15, zamrozenie: 12, tarcza: 12, sabotaz: 11 };
@@ -360,7 +360,7 @@ export function applyEvent(map, state, type, rng = Math.random) {
     case 'cofniecie': { const k = 3 + Math.floor(rng() * 6); info.n = k; steps.push(rewind(map, state, k)); break; }
     case 'jackpot': {
       const i = map.routeIdx.get(state.pos);
-      if (i === undefined) { state.shield = Math.min(3, state.shield + 2); info.desc = '+2 tarcze!'; break; }
+      if (i === undefined) { state.shield = Math.min(3, state.shield + 2); info.desc = '+2 shields!'; break; }
       const j = 4 + Math.floor(rng() * 4);
       const to = Math.min(map.route.length - 2, i + j);
       const from = state.pos;

@@ -1,6 +1,6 @@
 <!doctype html>
-<html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CZAT STERUJE — Neon Ascent</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CHAT CONTROLS — Neon Ascent</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;height:100%;background:#05040c;overflow:hidden;font-family:'Segoe UI',Consolas,monospace;color:#cfeaff}
 canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
@@ -46,19 +46,19 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
 #freeze{position:fixed;left:50%;top:48%;transform:translate(-50%,-50%);display:none;font-size:38px;letter-spacing:8px;color:#9fe8ff}
 </style></head><body>
 <canvas id="gl"></canvas><div id="scan"></div><div id="flash"></div>
-<div class="panel" id="title"><h1 class="neon">NEON ASCENT</h1><div class="sub">CZAT STERUJE POSTACIĄ</div>
+<div class="panel" id="title"><h1 class="neon">NEON ASCENT</h1><div class="sub">CHAT CONTROLS THE RUNNER</div>
  <div id="zone" class="neon">—</div><div class="bar"><i id="prog"></i></div><div id="stats"></div></div>
-<div class="panel" id="votes"><h2 class="neon">GŁOSOWANIE</h2>
+<div class="panel" id="votes"><h2 class="neon">VOTING</h2>
  <div id="vrows"></div>
- <div id="timer"><div class="bar"><i id="tbar"></i></div><div id="tleft"><span id="tsec">—</span><span id="tn">0 głosów</span></div></div>
- <div id="help">Pisz na czacie:<br><b>!gora !dol !lewo !prawo !czekaj</b><br>(albo !w !s !a !d !x) — wygrywa najczęstsza komenda</div></div>
+ <div id="timer"><div class="bar"><i id="tbar"></i></div><div id="tleft"><span id="tsec">—</span><span id="tn">0 votes</span></div></div>
+ <div id="help">Type in chat:<br><b>!up !down !left !right !wait</b><br>(or !w !s !a !d !x) — the most common command wins</div></div>
 <div id="bottom"><canvas id="mini" width="190" height="190"></canvas></div>
-<div class="panel" id="evbox"><div>NASTĘPNE ZDARZENIE</div><div class="big neon" id="evt">--:--</div>
+<div class="panel" id="evbox"><div>NEXT EVENT</div><div class="big neon" id="evt">--:--</div>
  <div id="shield"></div><div id="top"></div><div id="feed"></div></div>
 <div id="banner"><h1 class="neon" id="bt"></h1><p id="bd"></p></div>
 <div id="freeze" class="neon"></div>
-<div id="win"><h1 class="neon">WYGRANA!</h1><p id="wstat"></p><p id="wreset"></p></div>
-<div id="conn">łączenie…</div>
+<div id="win"><h1 class="neon">YOU WIN!</h1><p id="wstat"></p><p id="wreset"></p></div>
+<div id="conn">connecting…</div>
 <script type="importmap">{ "imports": { "three": "/vendor/three/build/three.module.js", "three/addons/": "/vendor/three/examples/jsm/" } }</script>
 <script src="/socket.io/socket.io.js"></script>
 <script type="module" src="/chatgame/client.js"></script>

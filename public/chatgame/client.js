@@ -414,8 +414,9 @@ function stepAnim(now) {
 function flashFx(col, a) { flashCol = col; flashAmt = Math.max(flashAmt, a); }
 
 // ---------- HUD ----------
+const CEN = { gora: 'up', dol: 'down', lewo: 'left', prawo: 'right', czekaj: 'wait' };
 const CMDS = ['gora', 'dol', 'lewo', 'prawo', 'czekaj'];
-const CNAMES = { gora: '▲ !gora', dol: '▼ !dol', lewo: '◀ !lewo', prawo: '▶ !prawo', czekaj: '■ !czekaj' };
+const CNAMES = { gora: '▲ !up', dol: '▼ !down', lewo: '◀ !left', prawo: '▶ !right', czekaj: '■ !wait' };
 const vrows = {};
 CMDS.forEach((c) => {
   const row = document.createElement('div'); row.className = 'vrow';
@@ -433,13 +434,14 @@ addEventListener('keydown', (e) => {
 
 function setVotes(counts) {
   const tot = Math.max(1, Object.values(counts).reduce((a, b) => a + b, 0));
+  $('tn').textContent = Object.values(counts).reduce((a, b) => a + b, 0) + ' votes';
   CMDS.forEach((c) => { vrows[c].bar.style.width = (100 * counts[c] / tot) + '%'; vrows[c].n.textContent = counts[c]; });
 }
 function esc(s) { return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
 function applyHud(h) {
   if (!h) return; HUD = h; skew = h.now - Date.now();
-  $('top').innerHTML = '<b style="color:#ff2bd6">TOP GŁOSUJĄCY</b><br>' + (h.top.length ? h.top.map((t, i) => `${i + 1}. ${esc(t[0])} <span style="color:#00e5ff">${t[1]}</span>`).join('<br>') : '—') + `<br><span style="color:#6f8aa8">wygrane: ${h.wins} • podejścia: ${h.runs}</span>`;
-  $('feed').innerHTML = h.feed.slice().reverse().map((f) => `<span style="color:#00e5ff">${esc(f.u)}</span> → ${f.c}`).join('<br>');
+  $('top').innerHTML = '<b style="color:#ff2bd6">TOP VOTERS</b><br>' + (h.top.length ? h.top.map((t, i) => `${i + 1}. ${esc(t[0])} <span style="color:#00e5ff">${t[1]}</span>`).join('<br>') : '—') + `<br><span style="color:#6f8aa8">wins: ${h.wins} • runs: ${h.runs}</span>`;
+  $('feed').innerHTML = h.feed.slice().reverse().map((f) => `<span style="color:#00e5ff">${esc(f.u)}</span> → ${CEN[f.c]||f.c}`).join('<br>');
 }
 function applyState(st) {
   S = st; if (!map) return;
@@ -447,13 +449,13 @@ function applyState(st) {
   $('zone').textContent = z.name.toUpperCase(); $('zone').style.color = z.color;
   const cur = st.routeNow >= 0 ? st.routeNow : st.maxRoute;
   $('prog').style.width = (100 * cur / (st.routeLen - 1)) + '%';
-  $('stats').innerHTML = `Wysokość: <b>${(t.y + 1) * 3} m</b> • Postęp: <b>${cur}/${st.routeLen - 1}</b><br>Ruchy: ${st.moves} • Upadki: ${st.falls} • Cofnięcia: ${st.setbacks}`;
+  $('stats').innerHTML = `Height: <b>${(t.y + 1) * 3} m</b> • Progress: <b>${cur}/${st.routeLen - 1}</b><br>Moves: ${st.moves} • Falls: ${st.falls} • Setbacks: ${st.setbacks}`;
   let sh = '';
   for (let i = 0; i < 3; i++) sh += `<span style="color:${i < st.shield ? '#39ff88' : '#2a2a44'}">◆</span> `;
-  if (st.blackout > 0) sh += `<br><span style="color:#ff2bd6">BLACKOUT: sterowanie odwrócone (${st.blackout})</span>`;
-  if (st.chaos > 0) sh += `<br><span style="color:#ff9a1f">BURZA DANYCH (${st.chaos})</span>`;
-  if (st.glitch) sh += `<br><span style="color:#ff2bd6">GLITCH: następny ruch losowy!</span>`;
-  $('shield').innerHTML = 'TARCZE: ' + sh;
+  if (st.blackout > 0) sh += `<br><span style="color:#ff2bd6">BLACKOUT: controls reversed (${st.blackout})</span>`;
+  if (st.chaos > 0) sh += `<br><span style="color:#ff9a1f">DATA STORM (${st.chaos})</span>`;
+  if (st.glitch) sh += `<br><span style="color:#ff2bd6">GLITCH: next move is random!</span>`;
+  $('shield').innerHTML = 'SHIELDS: ' + sh;
   tmpScene.zone = z;
 }
 const tmpScene = { zone: L.ZONES[0] };
@@ -466,15 +468,15 @@ function banner(title, desc, color) {
 const EV_COL = { cofniecie: '#ff1744', jackpot: '#ffe600', blackout: '#ff2bd6', burza: '#ff9a1f', zamrozenie: '#9fe8ff', tarcza: '#39ff88', sabotaz: '#ff1744' };
 function setWin(on, h) {
   $('win').style.display = on ? 'flex' : 'none';
-  if (on && S) { $('wstat').textContent = `Ruchy: ${S.moves} • Upadki: ${S.falls} • Cofnięcia: ${S.setbacks} • Zdarzenia: ${S.events}`; }
+  if (on && S) { $('wstat').textContent = `Moves: ${S.moves} • Falls: ${S.falls} • Setbacks: ${S.setbacks} • Events: ${S.events}`; }
 }
 let resetAt = 0;
 
 // ---------- socket ----------
 function connect() {
   socket = io('/chat');
-  socket.on('connect', () => { $('conn').textContent = 'połączono'; });
-  socket.on('disconnect', () => { $('conn').textContent = 'rozłączono — próbuję ponownie…'; });
+  socket.on('connect', () => { $('conn').textContent = 'connected'; });
+  socket.on('disconnect', () => { $('conn').textContent = 'disconnected — retrying…'; });
   socket.on('init', (d) => {
     map = L.buildIndex(d.map); cfg = d.cfg; S = d.state; queue = []; curAnim = null;
     buildWorld(); applyState(d.state); applyHud(d.hud); setRunnerTo(S.pos); setWin(S.won);
@@ -548,12 +550,12 @@ function frame(nowMs) {
   if (HUD) {
     const left = Math.max(0, HUD.windowEnd - srv); const frozen = HUD.frozenUntil > srv;
     $('tbar').style.width = (frozen ? 0 : 100 * left / HUD.voteMs) + '%';
-    $('tsec').textContent = frozen ? 'ZAMROŻENIE' : (left / 1000).toFixed(1) + ' s';
+    $('tsec').textContent = frozen ? 'FROZEN' : (left / 1000).toFixed(1) + ' s';
     const ev = Math.max(0, HUD.nextEventAt - srv), mm = Math.floor(ev / 60000), ss = Math.floor((ev % 60000) / 1000);
     $('evt').textContent = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0'); $('evt').style.color = ev < 30000 ? '#ff1744' : '#ffe600';
-    $('freeze').style.display = frozen ? 'block' : 'none'; if (frozen) $('freeze').textContent = 'SYSTEM ZAMROŻONY ' + Math.ceil((HUD.frozenUntil - srv) / 1000);
+    $('freeze').style.display = frozen ? 'block' : 'none'; if (frozen) $('freeze').textContent = 'SYSTEM FROZEN ' + Math.ceil((HUD.frozenUntil - srv) / 1000);
   }
-  if (S.won && resetAt) { $('wreset').textContent = 'Nowa gra za ' + Math.max(0, Math.ceil((resetAt - performance.now()) / 1000)) + ' s'; }
+  if (S.won && resetAt) { $('wreset').textContent = 'New game in ' + Math.max(0, Math.ceil((resetAt - performance.now()) / 1000)) + ' s'; }
   if (bannerT > 0) { bannerT -= dt; if (bannerT <= 0) $('banner').classList.remove('show'); }
   flashAmt = Math.max(0, flashAmt - dt * 1.8); const fl = $('flash'); fl.style.background = flashCol; fl.style.opacity = flashAmt * 0.55;
   if (nowMs - tMiniLast > 120) { tMiniLast = nowMs; drawMini(time); }
