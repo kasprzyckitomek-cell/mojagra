@@ -29,10 +29,15 @@ while true; do
     AUDIO=(-f lavfi -i anullsrc=r=44100:cl=stereo)
   fi
 
+  if [ "${ENCODER:-x264}" = "vaapi" ]; then
+    # Intel iGPU hardware encoding (frees the CPU). Needs /dev/dri in the container.
+    VENC=(-vaapi_device /dev/dri/renderD128 -vf "format=nv12,hwupload" -c:v h264_vaapi -b:v ${VBR}k -maxrate ${VBR}k -bufsize $((VBR*2))k)
+  else
+    VENC=(-c:v libx264 -preset "${X264_PRESET:-veryfast}" -tune zerolatency -b:v ${VBR}k -maxrate ${VBR}k -bufsize $((VBR*2))k -pix_fmt yuv420p)
+  fi
   timeout "${RESTART_HOURS}h" ffmpeg -hide_banner -loglevel warning \
     -f x11grab -framerate $FPS -video_size ${W}x${H} -i :99 "${AUDIO[@]}" \
-    -c:v libx264 -preset "${X264_PRESET:-veryfast}" -tune zerolatency -b:v ${VBR}k -maxrate ${VBR}k -bufsize $((VBR*2))k \
-    -g $((FPS*2)) -pix_fmt yuv420p -c:a aac -b:a 128k -ar 44100 -shortest -f $FMT "$TARGET"
+    "${VENC[@]}" -g $((FPS*2)) -c:a aac -b:a 128k -ar 44100 -shortest -f $FMT "$TARGET"
   echo "[stream] ffmpeg stopped ($?), restarting in 5s"
   kill $CPID $XPID 2>/dev/null; sleep 5; pkill -f chrome-profile 2>/dev/null; sleep 2
 done
