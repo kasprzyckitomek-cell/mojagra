@@ -185,6 +185,34 @@ module.exports = async function setupChat(app, io) {
     } catch (e) { console.log('[kick] zly payload', e.message); }
   });
 
+
+  // --- Kick OAuth: jednorazowe polaczenie kanalu i subskrypcja czatu ---
+  const KICK_ID = env.KICK_CLIENT_ID || '', KICK_SEC = env.KICK_CLIENT_SECRET || '';
+  const pending = new Map();
+  const origin = (req) => (env.PUBLIC_URL || `https://${req.get('host')}`).replace(/\/$/, '');
+  const b64u = (b) => b.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  app.get('/kick/login', (req, res) => {
+    if (!ADMIN_KEY || req.query.key !== ADMIN_KEY) return res.status(403).send('Forbidden: add ?key=ADMIN_KEY');
+    if (!KICK_ID || !KICK_SEC) return res.status(500).send('Set KICK_CLIENT_ID and KICK_CLIENT_SECRET in Railway variables first.');
+    const verifier = b64u(crypto.randomBytes(32)), state = b64u(crypto.randomBytes(16));
+    pending.set(state, verifier); setTimeout(() => pending.delete(state), 600000);
+    const q = new URLSearchParams({ response_type: 'code', client_id: KICK_ID, redirect_uri: origin(req) + '/kick/callback', scope: 'user:read channel:read events:subscribe', code_challenge: b64u(crypto.createHash('sha256').update(verifier).digest()), code_challenge_method: 'S256', state });
+    res.redirect('https://id.kick.com/oauth/authorize?' + q);
+  });
+  app.get('/kick/callback', async (req, res) => {
+    try {
+      const verifier = pending.get(req.query.state); pending.delete(req.query.state);
+      if (!verifier || !req.query.code) return res.status(400).send('Bad or expired login. Start again from /kick/login');
+      const tr = await fetch('https://id.kick.com/oauth/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', client_id: KICK_ID, client_secret: KICK_SEC, redirect_uri: origin(req) + '/kick/callback', code_verifier: verifier, code: String(req.query.code) }) });
+      const tok = await tr.json();
+      if (!tok.access_token) return res.status(500).send('Token error: ' + JSON.stringify(tok).replace(KICK_SEC, '***'));
+      const sr = await fetch('https://api.kick.com/public/v1/events/subscriptions', { method: 'POST', headers: { Authorization: 'Bearer ' + tok.access_token, 'Content-Type': 'application/json' }, body: JSON.stringify({ events: [{ name: 'chat.message.sent', version: 1 }], method: 'webhook' }) });
+      const sj = await sr.text();
+      console.log('[kick] subscribe', sr.status, sj.slice(0, 300));
+      res.status(sr.ok ? 200 : 500).send(`<pre>Subscribe status: ${sr.status}\n${sj.replace(/[<>&]/g, '')}</pre>`);
+    } catch (e) { res.status(500).send('Error: ' + e.message); }
+  });
+
   // --- admin ---
   const admin = express.Router();
   admin.use(express.json());
