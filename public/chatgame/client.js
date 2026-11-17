@@ -11,7 +11,9 @@ const rnd = L.mulberry32(777);
 
 // ---------- renderer ----------
 const canvas = $('gl');
-let pixelRatio = params.has('lite') ? 1 : Math.min(devicePixelRatio || 1, 1.5);
+const LITE = params.has('lite');
+if (LITE) document.body.classList.add('lite');
+let pixelRatio = +params.get('scale') || (LITE ? 0.65 : Math.min(devicePixelRatio || 1, 1.5));
 const FPS_CAP = +params.get('fps') || 0;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
 renderer.setPixelRatio(pixelRatio);
@@ -31,7 +33,7 @@ composer.addPass(new RenderPass(scene, camera));
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.45, 0.5, 0.82);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
-let useBloom = params.get('bloom') !== '0';
+let useBloom = params.has('bloom') ? params.get('bloom') !== '0' : !LITE;
 addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight);
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
@@ -184,7 +186,7 @@ function buildCity() {
   });
   const BASE = -80, M = 90;
   const list = [];
-  const want = 1100; let tries = 0;
+  const want = LITE ? 450 : 1100; let tries = 0;
   while (list.length < want && tries++ < want * 6) {
     const x = x0 - M + rnd() * (x1 - x0 + 2 * M), z = z0 - M + rnd() * (z1 - z0 + 2 * M);
     const w = 3 + rnd() * 7, d = 3 + rnd() * 7;
@@ -219,7 +221,7 @@ function buildSigns() {
   const words = ['NEON', 'ラーメン', '2077', 'CYBER', 'ネオン', 'HACK', 'BAR', 'SYNTH', 'ドローン', 'DATA', '404', 'LIVE', 'KICK', 'ZERO', 'VOID', '電脳', 'OPEN', 'NIGHT'];
   const colors = ['#ff2bd6', '#00e5ff', '#ffe600', '#39ff88', '#ff9a1f', '#a855ff'];
   const route = map.route; const g = new THREE.Group();
-  for (let i = 0; i < 45; i++) {
+  for (let i = 0; i < (LITE ? 25 : 45); i++) {
     const ri = 6 + Math.floor((i / 45) * (route.length - 12)) + Math.floor(rnd() * 8);
     const t = map.tiles[route[Math.min(route.length - 1, ri)]];
     const side = rnd() < 0.5 ? -1 : 1;
@@ -237,7 +239,7 @@ function buildSigns() {
 }
 
 function buildRain() {
-  const n = 2600; const pos = new Float32Array(n * 6);
+  const n = LITE ? 600 : 2600; const pos = new Float32Array(n * 6);
   rain = { n, pos, geo: new THREE.BufferGeometry() };
   for (let i = 0; i < n; i++) {
     const x = (rnd() - 0.5) * 90, y = rnd() * 60 - 20, z = (rnd() - 0.5) * 90;
@@ -258,7 +260,7 @@ function updateRain(dt, cx, cy, cz) {
 }
 
 function buildCars() {
-  const n = 90; carMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1.6, 0.35, 0.6), new THREE.MeshBasicMaterial({ color: 0xffffff }), n);
+  const n = LITE ? 35 : 90; carMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1.6, 0.35, 0.6), new THREE.MeshBasicMaterial({ color: 0xffffff }), n);
   cars = [];
   const route = map.route;
   for (let i = 0; i < n; i++) {

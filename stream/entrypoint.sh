@@ -1,7 +1,7 @@
 #!/bin/bash
 # Renders the game page in Chromium on a virtual screen and streams it with ffmpeg (24/7, auto-restart).
 set -u
-URL="${GAME_URL:-https://parkour-production-fb0b2708.up.railway.app/chat.html?mute=1&fps=30}"
+URL="${GAME_URL:-https://parkour-production-fb0b2708.up.railway.app/chat.html?mute=1&fps=24&lite=1}"
 W="${WIDTH:-1280}"; H="${HEIGHT:-720}"; FPS="${FPS:-30}"
 VBR="${VIDEO_KBPS:-2500}"
 OUT="${RTMP_URL:-}"; KEY="${STREAM_KEY:-}"
