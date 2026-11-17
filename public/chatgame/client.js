@@ -401,7 +401,7 @@ function stepAnim(now) {
     case 'move': runner.pos.lerpVectors(s.a, s.b, u); runner.pos.y += Math.sin(Math.PI * u) * 0.75 + (s.b.y - s.a.y) * 0; runner.scale = 1 + 0.15 * Math.sin(Math.PI * u); break;
     case 'slide': runner.pos.lerpVectors(s.a, s.b, u); break;
     case 'blocked': runner.pos.copy(s.a).addScaledVector(s.b, Math.sin(Math.PI * u) * 0.25); break;
-    case 'fall': if (u < 0.55) { const v = u / 0.55; runner.pos.copy(s.a); runner.pos.y -= v * v * 14; runner.vis = 1 - v; } else { const v = (u - 0.55) / 0.45; runner.pos.copy(s.b); runner.vis = v; runner.scale = v; } break;
+    case 'fall': if (u < 0.55) { const v = u / 0.55; runner.pos.copy(s.a); if (s.dir) { const d = L.DIRS[s.dir]; const o = Math.min(1, v * 2.2) * 0.9; runner.pos.x += d[0] * o; runner.pos.z += d[1] * o; runner.yaw = Math.atan2(d[0], d[1]) + Math.PI; } runner.pos.y -= v * v * 14; runner.vis = 1 - v; } else { const v = (u - 0.55) / 0.45; runner.pos.copy(s.b); runner.vis = v; runner.scale = v; } break;
     case 'bounce': runner.pos.lerpVectors(s.a, s.b, u); runner.pos.y += Math.sin(Math.PI * u) * 0.9; break;
     case 'rewind': { const e = u * u * (3 - 2 * u); runner.pos.lerpVectors(s.a, s.b, e); runner.pos.y += Math.sin(Math.PI * e) * 1.5; runner.vis = 0.5 + 0.5 * Math.sin(u * 40); break; }
     case 'teleport': { const e = u * u * (3 - 2 * u); runner.pos.lerpVectors(s.a, s.b, e); runner.pos.y += Math.sin(Math.PI * e) * 3; break; }

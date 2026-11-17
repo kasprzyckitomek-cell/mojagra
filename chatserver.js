@@ -17,6 +17,7 @@ module.exports = async function setupChat(app, io) {
     autoplay: env.AUTOPLAY === '1',
     resetSeconds: 60,
     webVote: env.ALLOW_WEB_VOTE === '1',
+    edgeFall: +env.EDGE_FALL || 0, // 0 = blokada, 1 = spadek do checkpointu, 2 = spadek na sam start
   };
   const ADMIN_KEY = env.ADMIN_KEY || '';
   const KICK_SECRET = env.KICK_WEBHOOK_SECRET || 'kick';
@@ -109,12 +110,12 @@ module.exports = async function setupChat(app, io) {
     nsp.emit('init', initPayload());
     save();
   }
-  const initPayload = () => ({ map: compact, state: view(), hud: hud(), cfg: { voteSeconds: cfg.voteSeconds, eventMinutes: cfg.eventMinutes, webVote: cfg.webVote } });
+  const initPayload = () => ({ map: compact, state: view(), hud: hud(), cfg: { voteSeconds: cfg.voteSeconds, eventMinutes: cfg.eventMinutes, webVote: cfg.webVote, edgeFall: cfg.edgeFall } });
 
   function resolveWindow() {
     const t = L.tally(votes, rng);
     if (cfg.autoplay && t.total === 0) { /* autogra: bot glosuje */ }
-    const steps = L.applyTick(map, state, t.winner, rng);
+    const steps = L.applyTick(map, state, t.winner, rng, { edgeFall: cfg.edgeFall });
     nsp.emit('tick', { winner: t.winner, counts: t.counts, total: t.total, steps, state: view(), hud: hud() });
     if (state.won) {
       stats.wins++; wonAt = Date.now();
@@ -238,6 +239,7 @@ module.exports = async function setupChat(app, io) {
     if (b.voteSeconds) cfg.voteSeconds = Math.max(2, +b.voteSeconds);
     if (b.eventMinutes) { cfg.eventMinutes = Math.max(0.2, +b.eventMinutes); nextEventAt = Date.now() + cfg.eventMinutes * 60000; }
     if (typeof b.autoplay === 'boolean') cfg.autoplay = b.autoplay;
+    if (b.edgeFall !== undefined) cfg.edgeFall = Math.max(0, Math.min(2, +b.edgeFall || 0));
     res.json(cfg);
   });
   admin.get('/status', (_req, res) => res.json({ cfg, state: view(), stats: { wins: stats.wins, runs: stats.runs, totalVotes: stats.totalVotes } }));

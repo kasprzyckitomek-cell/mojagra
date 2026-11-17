@@ -289,7 +289,7 @@ function land(map, state, id, steps) {
 }
 
 // jeden tick glosowania. cmd: nazwa komendy. Zwraca liste krokow do animacji.
-export function applyTick(map, state, cmd, rng = Math.random) {
+export function applyTick(map, state, cmd, rng = Math.random, opts = {}) {
   const steps = [];
   if (state.won) return steps;
   state.tick++;
@@ -298,8 +298,18 @@ export function applyTick(map, state, cmd, rng = Math.random) {
   if (cmd !== 'czekaj' && DIRS[cmd]) {
     if (state.glitch) { cmd = pick(rng, Object.keys(DIRS)); state.glitch = false; steps.push({ k: 'glitch', dir: cmd }); }
     const nb = neighbor(map, state.pos, cmd);
-    if (nb < 0) steps.push({ k: 'blocked', dir: cmd });
-    else {
+    if (nb < 0) {
+      // zly kierunek (brak kratki): przy edgeFall postac spada (1 = do checkpointu, 2 = od samego poczatku)
+      if (opts.edgeFall && !state.won) {
+        if (state.shield > 0) { state.shield--; steps.push({ k: 'blocked', dir: cmd }); }
+        else {
+          const from = state.pos;
+          if (opts.edgeFall === 2) { state.cp = map.start; state.cpHist = 0; }
+          state.history.length = state.cpHist + 1; state.pos = state.cp; state.falls++;
+          steps.push({ k: 'fall', from, to: state.pos, dir: cmd });
+        }
+      } else steps.push({ k: 'blocked', dir: cmd });
+    } else {
       const from = state.pos;
       state.history.push(nb); state.moves++;
       steps.push({ k: 'move', from, to: nb, dir: cmd });
