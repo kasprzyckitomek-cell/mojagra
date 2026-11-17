@@ -22,8 +22,9 @@ while true; do
   CPID=$!; sleep 8
 
   # audio: loop mp3s from /music if present, otherwise silence
-  if ls /music/*.mp3 >/dev/null 2>&1; then
-    ls /music/*.mp3 | sed "s/.*/file '&'/" > /tmp/playlist.txt
+  MDIR=/music; ls /music/*.mp3 >/dev/null 2>&1 || MDIR=/music-default
+  if ls $MDIR/*.mp3 >/dev/null 2>&1; then
+    ls $MDIR/*.mp3 | sed "s/.*/file '&'/" > /tmp/playlist.txt
     AUDIO=(-stream_loop -1 -f concat -safe 0 -i /tmp/playlist.txt)
   else
     AUDIO=(-f lavfi -i anullsrc=r=44100:cl=stereo)
