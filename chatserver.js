@@ -16,6 +16,7 @@ module.exports = async function setupChat(app, io) {
     seed: +env.MAP_SEED || 20260101,
     autoplay: env.AUTOPLAY === '1',
     resetSeconds: 60,
+    webVote: env.ALLOW_WEB_VOTE === '1',
   };
   const ADMIN_KEY = env.ADMIN_KEY || '';
   const KICK_SECRET = env.KICK_WEBHOOK_SECRET || 'kick';
@@ -108,7 +109,7 @@ module.exports = async function setupChat(app, io) {
     nsp.emit('init', initPayload());
     save();
   }
-  const initPayload = () => ({ map: compact, state: view(), hud: hud(), cfg: { voteSeconds: cfg.voteSeconds, eventMinutes: cfg.eventMinutes } });
+  const initPayload = () => ({ map: compact, state: view(), hud: hud(), cfg: { voteSeconds: cfg.voteSeconds, eventMinutes: cfg.eventMinutes, webVote: cfg.webVote } });
 
   function resolveWindow() {
     const t = L.tally(votes, rng);
@@ -148,7 +149,7 @@ module.exports = async function setupChat(app, io) {
     socket.emit('init', initPayload());
     let last = 0;
     socket.on('vote', (d) => {
-      if (!d || Date.now() - last < 300) return; last = Date.now();
+      if (!cfg.webVote || !d || Date.now() - last < 300) return; last = Date.now();
       const name = String(d.name || '').trim().slice(0, 16) || 'gosc-' + socket.id.slice(0, 4);
       addVote(name, d.cmd, 'www');
     });

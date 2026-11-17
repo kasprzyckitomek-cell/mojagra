@@ -1,0 +1,11 @@
+services:
+  neon-stream:
+    build: .
+    container_name: neon-stream
+    restart: unless-stopped
+    env_file: .env
+    shm_size: "1gb"
+    volumes:
+      - ./music:/music:ro      # optional: put .mp3 files here for background music
+    # Optional, if the server has an Intel/AMD GPU (much lighter on the CPU):
+    # devices: ["/dev/dri:/dev/dri"]

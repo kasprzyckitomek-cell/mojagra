@@ -11,7 +11,8 @@ const rnd = L.mulberry32(777);
 
 // ---------- renderer ----------
 const canvas = $('gl');
-let pixelRatio = Math.min(devicePixelRatio || 1, 1.5);
+let pixelRatio = params.has('lite') ? 1 : Math.min(devicePixelRatio || 1, 1.5);
+const FPS_CAP = +params.get('fps') || 0;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
 renderer.setPixelRatio(pixelRatio);
 renderer.setSize(innerWidth, innerHeight);
@@ -30,7 +31,7 @@ composer.addPass(new RenderPass(scene, camera));
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.45, 0.5, 0.82);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
-let useBloom = true;
+let useBloom = params.get('bloom') !== '0';
 addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight);
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
@@ -426,7 +427,7 @@ CMDS.forEach((c) => {
 });
 const nick = (() => { try { let n = localStorage.getItem('nick'); if (!n) { n = 'widz-' + Math.floor(Math.random() * 9000 + 1000); localStorage.setItem('nick', n); } return n; } catch (e) { return 'widz-' + Math.floor(Math.random() * 9000 + 1000); } })();
 let socket = null;
-function sendVote(c) { if (socket) socket.emit('vote', { name: nick, cmd: c }); }
+function sendVote(c) { if (socket && cfg.webVote) socket.emit('vote', { name: nick, cmd: c }); }
 addEventListener('keydown', (e) => {
   const m = { ArrowUp: 'gora', ArrowDown: 'dol', ArrowLeft: 'lewo', ArrowRight: 'prawo', ' ': 'czekaj' }[e.key];
   if (m) { e.preventDefault(); sendVote(m); }
@@ -478,6 +479,7 @@ function connect() {
   socket.on('connect', () => { $('conn').textContent = 'connected'; });
   socket.on('disconnect', () => { $('conn').textContent = 'disconnected — retrying…'; });
   socket.on('init', (d) => {
+    document.body.classList.toggle('noweb', !d.cfg.webVote);
     map = L.buildIndex(d.map); cfg = d.cfg; S = d.state; queue = []; curAnim = null;
     buildWorld(); applyState(d.state); applyHud(d.hud); setRunnerTo(S.pos); setWin(S.won);
     if (!window.__started) { window.__started = true; requestAnimationFrame(frame); }
@@ -520,6 +522,7 @@ let last = performance.now(), tMiniLast = 0, fpsAcc = 0, fpsN = 0, lowT = 0;
 const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(); let camInit = false;
 function frame(nowMs) {
   requestAnimationFrame(frame);
+  if (FPS_CAP && nowMs - last < 1000 / FPS_CAP - 2) return;
   const dt = Math.min(0.1, (nowMs - last) / 1000); last = nowMs; const time = nowMs / 1000;
   if (!map || !S) return;
   stepAnim(time);
