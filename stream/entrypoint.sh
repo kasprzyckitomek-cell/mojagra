@@ -8,7 +8,7 @@ OUT="${RTMP_URL:-}"; KEY="${STREAM_KEY:-}"
 CHROME="${CHROME_BIN:-chromium}"
 RESTART_HOURS="${RESTART_HOURS:-6}"
 if [ -z "$OUT" ]; then echo "Set RTMP_URL (and STREAM_KEY)"; exit 1; fi
-case "$OUT" in rtmp*) TARGET="${OUT%/}/$KEY"; FMT="flv";; *) TARGET="$OUT"; FMT="${OUT_FMT:-mp4}";; esac
+case "$OUT" in rtmp*) OUT="${OUT%/}"; case "$OUT" in */app) ;; *) OUT="$OUT/app";; esac; TARGET="$OUT/$KEY"; FMT="flv";; *) TARGET="$OUT"; FMT="${OUT_FMT:-mp4}";; esac
 export DISPLAY=:99
 
 while true; do
