@@ -56,4 +56,6 @@ setInterval(() => {
   for (const [room, list] of rooms) io.to(room).emit('players', list);
 }, SEND_MS);
 
-server.listen(PORT, '0.0.0.0', () => console.log(`Parkour dziala na porcie ${PORT}`));
+require('./chatserver')(app, io).catch((e) => console.error('[chat] blad startu', e)).finally(() => {
+  server.listen(PORT, '0.0.0.0', () => console.log(`Serwer dziala na porcie ${PORT}`));
+});
