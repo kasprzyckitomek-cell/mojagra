@@ -2,42 +2,64 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<title>Moja Gra</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parkour w chmurach</title>
 <style>
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #0f1220; font-family: system-ui, sans-serif; color: #fff; }
-  canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
-  .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(15,18,32,.85); }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #8ecbff; font-family: system-ui, "Segoe UI", sans-serif; color: #fff; user-select: none; }
+  canvas { display: block; }
+  .panel { position: fixed; background: rgba(10, 20, 40, .55); border-radius: 12px; padding: 10px 14px; backdrop-filter: blur(4px); }
+  #stats { top: 12px; left: 12px; font-size: 15px; line-height: 1.5; min-width: 190px; }
+  #stats b { font-size: 26px; }
+  #board { top: 12px; right: 12px; font-size: 13px; min-width: 190px; }
+  #board h3 { margin: 0 0 6px; font-size: 12px; opacity: .7; letter-spacing: .08em; }
+  #toast { position: fixed; top: 22%; left: 50%; transform: translateX(-50%); font-size: 30px; font-weight: 800; text-shadow: 0 3px 12px rgba(0,0,0,.5); opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
+  #toast.show { opacity: 1; }
+  #cross { position: fixed; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: rgba(255,255,255,.8); pointer-events: none; }
+  #help { bottom: 12px; left: 12px; font-size: 12px; opacity: .85; }
+  .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(15, 30, 60, .72); text-align: center; padding: 20px; }
   .overlay.hidden { display: none; }
-  h1 { margin: 0; font-size: 42px; }
+  h1 { margin: 0; font-size: 46px; text-shadow: 0 4px 16px rgba(0,0,0,.4); }
   input, button { font-size: 18px; padding: 12px 18px; border-radius: 10px; border: 0; }
-  input { width: 240px; text-align: center; }
-  button { background: #4f8cff; color: #fff; cursor: pointer; font-weight: 600; }
-  #hud { position: fixed; top: 10px; right: 12px; background: rgba(0,0,0,.35); padding: 10px 14px; border-radius: 10px; font-size: 14px; min-width: 160px; }
-  #hud h3 { margin: 0 0 6px; font-size: 13px; opacity: .7; }
-  #score { position: fixed; top: 10px; left: 12px; font-size: 18px; background: rgba(0,0,0,.35); padding: 8px 14px; border-radius: 10px; }
-  p.hint { opacity: .6; margin: 0; font-size: 14px; }
+  input { width: 250px; text-align: center; }
+  button { background: #ffb02e; color: #2b1a00; cursor: pointer; font-weight: 800; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  p { margin: 0; opacity: .85; }
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
-<div id="score">Wynik: 0</div>
-<div id="hud"><h3>TOP 5</h3><div id="board"></div></div>
+<div id="stats" class="panel">
+  Wysokość: <b id="h">0</b> m<br>
+  Rekord: <span id="best">0</span> m<br>
+  Sekcja: <span id="sec">0</span>/12 &nbsp; Upadki: <span id="deaths">0</span><br>
+  Czas: <span id="time">0:00.0</span>
+</div>
+<div id="board" class="panel"><h3>NAJWYŻEJ</h3><div id="list"></div></div>
+<div id="toast"></div>
+<div id="cross"></div>
+<div id="help" class="panel">WASD – ruch · Shift – bieg · Spacja – skok · R – wróć do checkpointu · V – widok z trzeciej osoby · Esc – kursor</div>
 
 <div id="menu" class="overlay">
-  <h1>Moja Gra</h1>
-  <input id="name" maxlength="14" placeholder="Twój nick" autofocus>
-  <button id="play">Graj</button>
-  <p class="hint">Steruj myszką lub palcem. Zjadaj kulki i mniejszych graczy.</p>
+  <h1>Parkour w chmurach</h1>
+  <p>Skacz coraz wyżej. Zdobywaj checkpointy. Nie spadnij!</p>
+  <input id="name" maxlength="14" placeholder="Twój nick">
+  <input id="room" maxlength="20" placeholder="Pokój (np. stream1)">
+  <div class="row"><button id="play">Graj</button></div>
+  <p id="roomHint">Znajomi wpisują ten sam pokój albo wchodzą linkiem ?room=nazwa</p>
 </div>
-<div id="dead" class="overlay hidden">
-  <h1>Zostałeś zjedzony!</h1>
-  <p id="deadInfo"></p>
-  <button id="again">Graj ponownie</button>
+<div id="finish" class="overlay hidden">
+  <h1>Meta! 🏆</h1>
+  <p id="finishInfo"></p>
+  <div class="row"><button id="again">Zagraj jeszcze raz (R)</button></div>
+</div>
+<div id="paused" class="overlay hidden" style="background: rgba(15,30,60,.35)">
+  <button id="resume">Kliknij, aby wrócić do gry</button>
 </div>
 
+<script type="importmap">
+{ "imports": { "three": "/vendor/three/build/three.module.js" } }
+</script>
 <script src="/socket.io/socket.io.js"></script>
-<script src="game.js"></script>
+<script type="module" src="main.js"></script>
 </body>
 </html>
