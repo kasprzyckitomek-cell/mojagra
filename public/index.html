@@ -32,12 +32,13 @@
   Wysokość: <b id="h">0</b> m<br>
   Rekord: <span id="best">0</span> m<br>
   Sekcja: <span id="sec">0</span>/12 &nbsp; Upadki: <span id="deaths">0</span><br>
+  💎 <span id="gems">0</span>/<span id="gemsTotal">0</span><br>
   Czas: <span id="time">0:00.0</span>
 </div>
 <div id="board" class="panel"><h3>NAJWYŻEJ</h3><div id="list"></div></div>
 <div id="toast"></div>
 <div id="cross"></div>
-<div id="help" class="panel">WASD – ruch · Shift – bieg · Spacja – skok · R – wróć do checkpointu · V – widok z trzeciej osoby · Esc – kursor</div>
+<div id="help" class="panel">WASD – ruch · Shift – bieg · Spacja – skok · R – wróć do checkpointu · V – kamera · M – dźwięk · Esc – kursor</div>
 
 <div id="menu" class="overlay">
   <h1>Parkour w chmurach</h1>
@@ -57,7 +58,7 @@
 </div>
 
 <script type="importmap">
-{ "imports": { "three": "/vendor/three/build/three.module.js" } }
+{ "imports": { "three": "/vendor/three/build/three.module.js", "three/addons/": "/vendor/three/examples/jsm/" } }
 </script>
 <script src="/socket.io/socket.io.js"></script>
 <script type="module" src="main.js"></script>

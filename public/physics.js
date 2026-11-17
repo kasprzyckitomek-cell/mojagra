@@ -28,6 +28,7 @@ function approach(v, target, delta) {
 }
 
 function overlaps(p, b) {
+  if (b.off) return false; // znikająca platforma
   return p.x - HALF < b.maxx && p.x + HALF > b.minx &&
          p.z - HALF < b.maxz && p.z + HALF > b.minz &&
          p.y < b.maxy - EPS && p.y + HEIGHT > b.miny + EPS;

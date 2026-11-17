@@ -60,7 +60,12 @@ export function generateLevel(seed = 1337) {
       if (!chosen) throw new Error(`Brak miejsca na platformę ${count} (seed ${seed})`);
 
       // lód od sekcji 4, tylko na zwykłych platformach
-      const kind = isFinal ? 'finish' : isCp ? 'checkpoint' : (s >= 4 && r() < 0.18 + 0.02 * s ? 'ice' : 'normal');
+      let kind = isFinal ? 'finish' : isCp ? 'checkpoint' : 'normal';
+      if (kind === 'normal') {
+        const roll = r();
+        if (s >= 4 && roll < 0.18 + 0.02 * s) kind = 'ice';
+        else if (s >= 5 && roll > 0.8 && cur.kind !== 'crumble' && cur.kind !== 'ice') kind = 'crumble'; // znikająca platforma
+      }
       const plat = { x: chosen.x, y, z: chosen.z, size, section: s, kind, hue: (s * 31 + 180) % 360, gap, dy };
       plats.push(plat);
       lastDir = chosen.d;

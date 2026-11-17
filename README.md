@@ -14,7 +14,7 @@ Otwórz http://localhost:3000. Hosting: Railway (zmienną `PORT` ustawia platfor
 
 ## Sterowanie
 
-WASD – ruch, Shift – bieg, Spacja – skok, R – powrót do checkpointu, V – widok z trzeciej osoby, Esc – kursor.
+WASD – ruch, Shift – bieg, Spacja – skok, R – powrót do checkpointu, V – zmiana kamery, M – dźwięk, Esc – kursor.
 
 ## Pokoje
 
@@ -26,3 +26,11 @@ Pokój wybierasz w menu albo linkiem `?room=nazwa`. Znajomi i widzowie streamu w
 - `public/level.js` – deterministyczny generator poziomu (każdy gracz ma ten sam poziom)
 - `public/physics.js` – fizyka gracza (kolizje AABB, coyote time, lód)
 - `public/main.js` – render Three.js, kamera, HUD, multiplayer
+
+## Co się dzieje na mapie
+
+- 12 motywów sekcji (łąka, drewno, pustynia, zamek, mech, śnieg, lawa, marmur, kryształy, neon, stacja, złoto) z teksturami i animowanym blaskiem
+- dekoracje (drzewa, latarnie, kaktusy, pochodnie, płomienie, kryształy, pierścienie neonowe) i cząsteczki zależne od sekcji
+- znikające platformy (od sekcji 5), lód, kryształy do zbierania, dźwięki generowane w przeglądarce
+- ptaki, balony, dryfujące chmury, spadające gwiazdy, kurz przy lądowaniu
+- parametr testowy `?dbgsection=N` teleportuje do sekcji N
