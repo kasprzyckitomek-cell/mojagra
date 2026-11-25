@@ -2,6 +2,29 @@
 import * as THREE from 'three';
 import { emojiTexture } from './models';
 
+let dotTex: THREE.Texture | null = null;
+function dot() {
+  if (!dotTex) {
+    const c = document.createElement('canvas'); c.width = c.height = 32;
+    const g = c.getContext('2d')!;
+    const gr = g.createRadialGradient(16, 16, 0, 16, 16, 15);
+    gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.5, 'rgba(255,255,255,0.8)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 32, 32);
+    dotTex = new THREE.CanvasTexture(c);
+  }
+  return dotTex;
+}
+let leafTex: THREE.Texture | null = null;
+function leaf() {
+  if (!leafTex) {
+    const c = document.createElement('canvas'); c.width = c.height = 32;
+    const g = c.getContext('2d')!;
+    g.fillStyle = '#fff'; g.beginPath(); g.ellipse(16, 16, 13, 6, 0.6, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 2; g.stroke();
+    leafTex = new THREE.CanvasTexture(c);
+  }
+  return leafTex;
+}
 interface P { x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number; max: number; size: number; r: number; g: number; b: number; grav: number }
 interface Ring { mesh: THREE.Mesh; life: number; max: number; grow: number; fill?: boolean }
 
@@ -15,6 +38,9 @@ export class FX {
   private m4 = new THREE.Matrix4();
   private col = new THREE.Color();
   rain: THREE.LineSegments;
+  flies: THREE.Points;
+  leaves: THREE.Points;
+  private flyData: { x: number; y: number; z: number; ph: number }[] = [];
   snow: THREE.Points;
   constructor(public scene: THREE.Scene, public heightAt: (x: number, z: number) => number) {
     const geo = new THREE.OctahedronGeometry(0.12, 0);
@@ -36,10 +62,51 @@ export class FX {
     const sp = new Float32Array(N * 3);
     for (let i = 0; i < N; i++) sp.set([(Math.random() - 0.5) * 70, Math.random() * 30, (Math.random() - 0.5) * 70], i * 3);
     sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
-    this.snow = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 0.18, transparent: true, opacity: 0.9 }));
+    this.snow = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 0.28, transparent: true, opacity: 0.9, map: dot(), depthWrite: false }));
     this.snow.visible = false;
     this.snow.frustumCulled = false;
     scene.add(this.snow);
+    // świetliki (noc) i spadające liście (jesień)
+    const fg = new THREE.BufferGeometry();
+    fg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(40 * 3), 3));
+    this.flies = new THREE.Points(fg, new THREE.PointsMaterial({ color: 0xd8ff70, size: 0.45, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, map: dot() }));
+    this.flies.frustumCulled = false; this.flies.visible = false;
+    scene.add(this.flies);
+    for (let i = 0; i < 40; i++) this.flyData.push({ x: (Math.random() - 0.5) * 50, y: 0.5 + Math.random() * 2, z: (Math.random() - 0.5) * 50, ph: Math.random() * 10 });
+    const lg = new THREE.BufferGeometry();
+    const lp = new Float32Array(50 * 3);
+    for (let i = 0; i < 50; i++) lp.set([(Math.random() - 0.5) * 60, Math.random() * 14, (Math.random() - 0.5) * 60], i * 3);
+    lg.setAttribute('position', new THREE.BufferAttribute(lp, 3));
+    this.leaves = new THREE.Points(lg, new THREE.PointsMaterial({ color: 0xb05a20, size: 0.45, transparent: true, opacity: 0.9, map: leaf(), alphaTest: 0.3, depthWrite: false }));
+    this.leaves.frustumCulled = false; this.leaves.visible = false;
+    scene.add(this.leaves);
+  }
+
+  ambient(dt: number, px: number, pz: number, flies: boolean, leaves: boolean, t: number) {
+    this.flies.visible = flies;
+    if (flies) {
+      const a = this.flies.geometry.attributes.position as THREE.BufferAttribute;
+      this.flyData.forEach((f, i) => {
+        f.ph += dt;
+        f.x += Math.sin(f.ph * 0.7 + i) * dt * 0.8; f.z += Math.cos(f.ph * 0.6 + i * 2) * dt * 0.8;
+        if (Math.abs(f.x) > 25) f.x *= -0.9; if (Math.abs(f.z) > 25) f.z *= -0.9;
+        const wx = px + f.x, wz = pz + f.z;
+        a.setXYZ(i, wx, this.heightAt(wx, wz) + f.y + Math.sin(f.ph * 2) * 0.3, wz);
+      });
+      a.needsUpdate = true;
+      (this.flies.material as THREE.PointsMaterial).opacity = 0.5 + Math.sin(t * 3) * 0.3;
+    }
+    this.leaves.visible = leaves;
+    if (leaves) {
+      this.leaves.position.set(px, this.heightAt(px, pz), pz);
+      const a = this.leaves.geometry.attributes.position as THREE.BufferAttribute;
+      for (let i = 0; i < a.count; i++) {
+        let y = a.getY(i) - dt * 0.9;
+        if (y < 0) y = 12 + Math.random() * 2;
+        a.setXYZ(i, a.getX(i) + Math.sin(t + i) * dt * 0.6, y, a.getZ(i) + Math.cos(t * 0.7 + i) * dt * 0.4);
+      }
+      a.needsUpdate = true;
+    }
   }
 
   burst(x: number, y: number, z: number, n: number, color: number, speed = 3, life = 0.8, size = 1, grav = 9) {

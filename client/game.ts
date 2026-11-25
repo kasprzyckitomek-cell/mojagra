@@ -756,6 +756,8 @@ export class Game {
     const baseAmb = 0.02 + light * 0.18 + (fullMoon && !sunUp ? 0.08 : 0);
     if (this.fx.flash === 0) this.amb.intensity = baseAmb;
     this.fx.update(dt, this.camera.position.x, this.camera.position.z, this.env.w, this.env.wi, this.amb, baseAmb);
+    const bio = this.gen.biome(this.me.x, this.me.z);
+    this.fx.ambient(dt, this.me.x, this.me.z, light < 0.3 && se !== 'winter' && ['grass', 'forest', 'swamp', 'savanna', 'mushroom'].includes(bio), se === 'autumn' && light > 0.5 && (bio === 'forest' || bio === 'grass'), this.t);
     // pula świateł punktowych
     type L = { x: number; y: number; z: number; r: number; c: number; i: number };
     const cand: L[] = [];
@@ -823,6 +825,8 @@ export class Game {
       this.objects.rebuild(this.me.x, this.me.z, 30 + this.settings.view * 22);
     }
     if (!this.objects.dirty && now - this.objects.lastBuild > 1500) this.objects.dirty = true;
+    this.objects.swayU.value = this.t;
+    this.objects.windU.value += ((this.env.w === 'storm' ? 4 : this.env.w === 'rain' || this.env.w === 'snow' ? 2 : 1) - this.objects.windU.value) * Math.min(1, dt * 0.5);
     this.entities.update(dt, now, this.t, this.me, this.yaw);
     this.updateLighting(dt);
     // kursor

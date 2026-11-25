@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { WorldGen, CHUNK, StaticObj, Biome } from '../shared/world';
 import { objGeometry, vcMat } from './models';
+import { mulberry32, hash3 } from '../shared/rng';
 import { OBJ } from '../shared/data/objects';
 import type { Season } from '../shared/env';
 
@@ -137,6 +138,8 @@ export class Terrain {
 // =====================================================================
 // Obiekty świata – instancjonowanie per typ wyglądu
 // =====================================================================
+const SWAY = new Set(['tree_pine', 'tree_pine_snow', 'tree_birch', 'tree_dead', 'mushtree', 'palm', 'grass', 'sapling', 'reeds', 'flowers', 'berry_bush', 'berry_bush_empty', 'deco_tuft', 'carrot', 'glowcap', 'cactus']);
+
 export class WorldObjects {
   group = new THREE.Group();
   meshes = new Map<string, THREE.InstancedMesh>();
@@ -146,11 +149,52 @@ export class WorldObjects {
   lastBuild = 0;
   visible: StaticObj[] = [];
   mat = vcMat();
+  swayMat = vcMat();
+  swayU = { value: 0 };
+  windU = { value: 1 };
   season: Season = 'autumn';
+  private deco = new Map<number, { type: string; x: number; z: number; r: number; s: number }[]>();
   private instMap = new Map<string, number[]>();
 
   constructor(public gen: WorldGen, scene: THREE.Scene) {
     scene.add(this.group);
+    // kołysanie roślin na wietrze (shader wierzchołków)
+    this.swayMat.onBeforeCompile = (sh) => {
+      sh.uniforms.uTime = this.swayU;
+      sh.uniforms.uWind = this.windU;
+      sh.vertexShader = 'uniform float uTime;\nuniform float uWind;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+        #ifdef USE_INSTANCING
+          vec3 ip = vec3(instanceMatrix[3][0], instanceMatrix[3][1], instanceMatrix[3][2]);
+        #else
+          vec3 ip = vec3(0.0);
+        #endif
+        float sw = max(0.0, transformed.y - 0.35);
+        transformed.x += sin(uTime * 1.3 + ip.x * 0.37 + ip.z * 0.21) * sw * 0.035 * uWind;
+        transformed.z += cos(uTime * 1.1 + ip.x * 0.23 + ip.z * 0.31) * sw * 0.025 * uWind;`);
+    };
+  }
+
+  /** Drobne, nieinteraktywne detale gruntu (kępki, kamyki, patyki) – tylko po stronie klienta. */
+  decoFor(cx: number, cz: number) {
+    const key = this.gen.chunkKey(cx, cz);
+    let d = this.deco.get(key);
+    if (d) return d;
+    d = [];
+    const r = mulberry32(hash3(this.gen.seed ^ 0x5eed, cx, cz));
+    for (let i = 0; i < 26; i++) {
+      const x = cx * CHUNK + r() * CHUNK, z = cz * CHUNK + r() * CHUNK, roll = r(), rot = r() * 6.28, sc = 0.7 + r() * 0.7;
+      const b = this.gen.biome(x, z);
+      let type = '';
+      if (b === 'grass' || b === 'savanna' || b === 'swamp') type = roll < 0.7 ? 'deco_tuft' : 'deco_pebble';
+      else if (b === 'forest') type = roll < 0.45 ? 'deco_twig' : roll < 0.85 ? 'deco_tuft' : 'deco_pebble';
+      else if (b === 'rocky' || b === 'ruins' || b === 'mushroom') type = roll < 0.8 ? 'deco_pebble' : 'deco_twig';
+      else if (b === 'desert') type = roll < 0.06 ? 'deco_skull' : roll < 0.6 ? 'deco_pebble' : '';
+      else if (b === 'beach') type = roll < 0.4 ? 'deco_pebble' : '';
+      if (type) d.push({ type, x, z, r: rot, s: sc });
+    }
+    this.deco.set(key, d);
+    if (this.deco.size > 3000) this.deco.delete(this.deco.keys().next().value as number);
+    return d;
   }
 
   renderType(o: StaticObj): string | null {
@@ -189,6 +233,11 @@ export class WorldObjects {
     for (const key of this.chunks) {
       const cx = key % 10000, cz = Math.floor(key / 10000);
       if ((cx * CHUNK + 16 - px) ** 2 + (cz * CHUNK + 16 - pz) ** 2 > (radius + 32) ** 2) continue;
+      for (const dd of this.decoFor(cx, cz)) {
+        if ((dd.x - px) ** 2 + (dd.z - pz) ** 2 > r2 * 0.5) continue;
+        if (!counts.has(dd.type)) counts.set(dd.type, []);
+        counts.get(dd.type)!.push({ id: 0, type: dd.type, x: dd.x, z: dd.z, r: dd.r, s: dd.s });
+      }
       for (const o of this.gen.chunkObjects(cx, cz)) {
         if ((o.x - px) ** 2 + (o.z - pz) ** 2 > r2) continue;
         this.visible.push(o);
@@ -205,8 +254,8 @@ export class WorldObjects {
         if (im) { this.group.remove(im); im.dispose(); }
         const geo = objGeometry(rt);
         if (!geo) continue;
-        im = new THREE.InstancedMesh(geo, this.mat, Math.ceil(list.length * 1.4) + 16);
-        im.castShadow = !['grass', 'grass_picked', 'flint', 'rocks', 'sand', 'clay', 'note', 'rabbit_hole', 'titan_lair', 'tentacle_spot', 'flowers', 'carrot', 'mushroom'].includes(rt);
+        im = new THREE.InstancedMesh(geo, SWAY.has(rt) ? this.swayMat : this.mat, Math.ceil(list.length * 1.4) + 16);
+        im.castShadow = !rt.startsWith('deco_') && !['grass', 'grass_picked', 'flint', 'rocks', 'sand', 'clay', 'note', 'rabbit_hole', 'titan_lair', 'tentacle_spot', 'flowers', 'carrot', 'mushroom'].includes(rt);
         im.receiveShadow = false;
         im.frustumCulled = false;
         this.group.add(im);
@@ -217,7 +266,7 @@ export class WorldObjects {
         const y = this.gen.height(o.x, o.z);
         v.set(o.x, y - 0.05, o.z);
         q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), o.r);
-        const s = o.id < 10000 ? 1 : o.s;
+        const s = o.id < 10000 && o.id > 0 ? 1 : o.s;
         sc.set(s, s, s);
         m4.compose(v, q, sc);
         im!.setMatrixAt(i, m4);
@@ -227,7 +276,7 @@ export class WorldObjects {
         if (this.season === 'autumn' && (rt === 'tree_birch' || rt === 'berry_bush' || rt === 'sapling')) col.setRGB(1.5 * tint, 0.95 * tint, 0.45 * tint);
         if (this.season === 'summer' && (rt === 'grass' || rt === 'tree_birch')) col.setRGB(1.15 * tint, 1.05 * tint, 0.7 * tint);
         im!.setColorAt(i, col);
-        ids.push(o.id);
+        if (o.id) ids.push(o.id);
       });
       im.count = list.length;
       im.instanceMatrix.needsUpdate = true;

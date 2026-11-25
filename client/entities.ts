@@ -32,6 +32,10 @@ export interface EntView {
   lastHit?: number;
 }
 
+const BLOB_GEO = new THREE.CircleGeometry(0.5, 16).rotateX(-Math.PI / 2);
+const BLOB_MAT = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false });
+function blob(r: number) { const m = new THREE.Mesh(BLOB_GEO, BLOB_MAT); m.scale.setScalar(r); m.position.y = 0.04; m.renderOrder = 1; return m; }
+
 export interface StructView { id: number; type: string; data: any; model: StructModel; obj: THREE.Group }
 
 function makeHpBar(): { s: THREE.Sprite; c: HTMLCanvasElement } {
@@ -102,6 +106,7 @@ export class Entities {
       if (!cd) return null;
       const rig = makeCharacter(cd, a[11] || 0);
       const v: EntView = { ...base, obj: rig.root, rig, name: a[8], skin: a[11] };
+      rig.root.add(blob(1.0));
       if (id !== this.myId) {
         v.nameTag = textSprite(a[8]);
         v.nameTag.position.y = 2.75;
@@ -118,6 +123,7 @@ export class Entities {
       const rig = makeMobRig(def);
       rig.root.scale.setScalar(def.scale);
       const v: EntView = { ...base, obj: rig.root, rig };
+      if (def.ai !== 'static') rig.root.add(blob((def.radius * 2.2) / def.scale));
       const hb = makeHpBar(); v.hpBar = hb.s; v.hpCanvas = hb.c;
       hb.s.position.y = rig.height + 0.35;
       hb.s.scale.set(1.2 / def.scale, 0.15 / def.scale, 1);

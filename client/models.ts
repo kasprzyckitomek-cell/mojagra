@@ -31,10 +31,10 @@ export const outlineMat = new THREE.MeshBasicMaterial({ color: 0x15100c, side: T
 
 // ---------- Geometrie bazowe ----------
 const G = {
-  box: new THREE.BoxGeometry(1, 1, 1),
+  box: new THREE.BoxGeometry(1, 1, 1, 2, 2, 2),
   sph: new THREE.SphereGeometry(0.5, 10, 8),
   sphLo: new THREE.SphereGeometry(0.5, 7, 5),
-  cyl: new THREE.CylinderGeometry(0.5, 0.5, 1, 8),
+  cyl: new THREE.CylinderGeometry(0.5, 0.5, 1, 8, 2),
   cylLo: new THREE.CylinderGeometry(0.5, 0.5, 1, 6),
   cone: new THREE.ConeGeometry(0.5, 1, 8),
   coneLo: new THREE.ConeGeometry(0.5, 1, 6),
@@ -76,6 +76,56 @@ function merge(parts: THREE.BufferGeometry[]) {
   return g;
 }
 
+// ---------- "Ręcznie lepione" zniekształcenie geometrii ----------
+function hnoise(x: number, y: number, z: number, s: number) {
+  const v = Math.sin(Math.round(x * 400) * 12.9898 + Math.round(y * 400) * 78.233 + Math.round(z * 400) * 37.719 + s * 11.13) * 43758.5453;
+  return v - Math.floor(v) - 0.5;
+}
+/** Przesuwa wierzchołki o deterministyczny szum (te same pozycje → to samo przesunięcie, więc bez dziur). */
+export function wobble(geo: THREE.BufferGeometry, amt: number, seed = 1): THREE.BufferGeometry {
+  const g = geo.index ? geo.toNonIndexed() : geo.clone();
+  const p = g.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    p.setXYZ(i, x + hnoise(x, y, z, seed) * amt, y + hnoise(y, z, x, seed + 1) * amt * 0.7, z + hnoise(z, x, y, seed + 2) * amt);
+  }
+  g.computeVertexNormals();
+  g.computeBoundingSphere();
+  return g;
+}
+const wobCache = new Map<string, THREE.BufferGeometry>();
+function wobbleCached(geo: THREE.BufferGeometry, amt: number, variant: number) {
+  const k = `${geo.uuid}|${amt}|${variant}`;
+  let g = wobCache.get(k);
+  if (!g) { g = wobble(geo, amt, variant * 7 + 3); wobCache.set(k, g); }
+  return g;
+}
+/** Zniekształca wszystkie siatki w grupie (potwory, budowle) i lekko je przechyla. */
+export function organic(root: THREE.Object3D, amt = 0.07, tilt = 0.04, seed = 1) {
+  let i = seed;
+  root.traverse((o: any) => {
+    if (!o.isMesh || o.material === outlineMat || o.userData.noWobble) return;
+    const sc = (o.scale.x + o.scale.y + o.scale.z) / 3;
+    if (sc < 0.12) return; // oczy i drobne detale zostają gładkie
+    i++;
+    o.geometry = wobbleCached(o.geometry, amt, i % 4);
+    if (tilt) { o.rotation.x += hnoise(i, 1, 2, seed) * tilt * 2; o.rotation.z += hnoise(2, i, 1, seed) * tilt * 2; }
+  });
+}
+// Krzywa gałąź z kilku segmentów
+function branch(parts: THREE.BufferGeometry[], col: number, x: number, y: number, z: number, len: number, r: number, ax: number, az: number, segs = 3, bend = 0.25) {
+  let cx = x, cy = y, cz = z, a1 = ax, a2 = az;
+  for (let i = 0; i < segs; i++) {
+    const l = len / segs, rr = r * (1 - i / (segs + 1));
+    const dx = Math.sin(a2) * Math.cos(a1) * 0 + Math.sin(a2), dy = Math.cos(a2) * Math.cos(a1), dzz = Math.sin(a1);
+    const nx = cx + dx * l, ny = cy + dy * l, nz = cz + dzz * l;
+    parts.push(part(G.cylLo, col, [(cx + nx) / 2, (cy + ny) / 2, (cz + nz) / 2], [rr * 2, l * 1.05, rr * 2], [a1, 0, -a2]));
+    cx = nx; cy = ny; cz = nz;
+    a2 += bend * (i % 2 ? -1 : 1); a1 += bend * 0.6;
+  }
+  return [cx, cy, cz];
+}
+
 // =====================================================================
 // Obiekty świata (instancjonowane)
 // =====================================================================
@@ -83,11 +133,50 @@ const objGeoCache = new Map<string, THREE.BufferGeometry | null>();
 
 export function objGeometry(t: string): THREE.BufferGeometry | null {
   if (objGeoCache.has(t)) return objGeoCache.get(t)!;
-  const g = buildObj(t);
+  let g = buildObj(t);
+  if (g) {
+    const amt = WOB[t] ?? 0.06;
+    if (amt > 0) g = wobble(g, amt, t.length);
+  }
   objGeoCache.set(t, g);
   return g;
 }
 
+const WOB: Record<string, number> = {
+  boulder: 0.22, boulder_gold: 0.2, boulder_iron: 0.2, boulder_copper: 0.2, boulder_coal: 0.2, crystal_node: 0.05, mole_mound: 0.35, queen_nest: 0.3,
+  tree_pine: 0.12, tree_pine_snow: 0.12, tree_birch: 0.14, mushtree: 0.12, spider_den: 0.25, ruin_pillar: 0.1, portal: 0.08, stone_circle: 0.1,
+  grass: 0.03, flowers: 0.02, flint: 0.03, note: 0, titan_lair: 0.1, rabbit_hole: 0.05, deco_tuft: 0.02, deco_pebble: 0.05, deco_twig: 0.02,
+};
+function evergreen(leaf: number, trunk: number, snow = false) {
+  // ciemne, opadające, poszarpane piętra igieł na krzywym pniu
+  const p: THREE.BufferGeometry[] = [];
+  const [tx, ty, tz] = branch(p, trunk, 0, 0, 0, 3.2, 0.24, 0.05, 0.08, 3, 0.07);
+  void tx; void ty; void tz;
+  const tiers = [[1.3, 1.6, 2.5], [2.3, 1.4, 2.0], [3.2, 1.2, 1.5], [4.0, 1.0, 1.0]];
+  tiers.forEach(([y, h, r], i) => {
+    const off = (i % 2 ? 0.08 : -0.06);
+    const tier = new THREE.ConeGeometry(0.5, 1, 7, 1, true);
+    p.push(part(tier, i % 2 ? leaf : 0x24453a, [off, y + h * 0.4, -off], [r, h, r], [0, i * 0.7, off * 0.6]));
+    // poszarpany brzeg – kilka "frędzli"
+    for (let k = 0; k < 6; k++) {
+      const a = k / 6 * Math.PI * 2 + i;
+      p.push(part(G.coneLo, leaf, [Math.sin(a) * r * 0.42 + off, y - 0.05, Math.cos(a) * r * 0.42 - off], [0.28, 0.55, 0.28], [Math.cos(a) * 2.6, 0, -Math.sin(a) * 2.6]));
+    }
+    if (snow) p.push(part(G.coneLo, 0xd8dcd8, [off, y + h * 0.55, -off], [r * 0.85, h * 0.45, r * 0.85]));
+  });
+  p.push(part(G.coneLo, leaf, [0.12, 4.9, 0.05], [0.35, 0.9, 0.35], [0, 0, -0.35]));
+  return p;
+}
+function lumpyTree(leaf: number, leaf2: number, trunk: number) {
+  // krzywy pień z gałęziami i nieregularną koroną z kilku brył
+  const p: THREE.BufferGeometry[] = [];
+  const [x, y, z] = branch(p, trunk, 0, 0, 0, 2.6, 0.22, 0.1, -0.12, 3, 0.18);
+  branch(p, trunk, 0, 1.4, 0, 1.2, 0.09, 0.4, 0.9, 2, 0.3);
+  branch(p, trunk, 0, 1.7, 0, 1.0, 0.08, -0.5, -0.8, 2, 0.3);
+  const blobs = [[0, 0.5, 0, 1.6], [0.8, 0.2, 0.3, 1.1], [-0.7, 0.1, -0.2, 1.15], [0.2, 1.1, -0.2, 1.0], [-0.3, 0.6, 0.7, 0.9]];
+  blobs.forEach(([bx, by, bz, r], i) => p.push(part(G.ico, i % 2 ? leaf : leaf2, [x + bx, y + by, z + bz], [r * 1.3, r * 1.05, r * 1.3], [i, i * 2, 0])));
+  return p;
+}
 function pineTree(leaf: number, trunk = 0x3e2c1c) {
   return [
     part(G.cylLo, trunk, [0, 0.9, 0], [0.35, 1.8, 0.35]),
@@ -99,28 +188,35 @@ function pineTree(leaf: number, trunk = 0x3e2c1c) {
 
 function buildObj(t: string): THREE.BufferGeometry | null {
   switch (t) {
-    case 'tree_pine': return merge(pineTree(0x1f3d2c));
-    case 'tree_pine_snow': return merge([...pineTree(0x1f3d2c), part(G.coneLo, 0xf4f8ff, [0, 4.75, 0], [0.9, 0.9, 0.9]), part(G.coneLo, 0xf4f8ff, [0, 3.75, 0], [1.3, 0.5, 1.3])]);
-    case 'tree_birch': return merge([
-      part(G.cylLo, 0xc8c0ac, [0, 1.3, 0], [0.3, 2.6, 0.3]), part(G.box, 0x333333, [0.12, 1.0, 0], [0.08, 0.1, 0.32]), part(G.box, 0x333333, [-0.1, 1.8, 0.05], [0.08, 0.08, 0.3]),
-      part(G.ico, 0x4e6230, [0, 3.2, 0], [2.4, 2.0, 2.4]), part(G.ico, 0x5a6e36, [0.6, 3.8, 0.3], [1.5, 1.3, 1.5]), part(G.ico, 0x44582a, [-0.5, 2.8, -0.4], [1.4, 1.2, 1.4]),
-    ]);
-    case 'tree_dead': return merge([
-      part(G.cylLo, 0x5a4636, [0, 1.2, 0], [0.3, 2.4, 0.3]), part(G.cylLo, 0x5a4636, [0.4, 2.1, 0], [0.12, 1.2, 0.12], [0, 0, -0.8]), part(G.cylLo, 0x5a4636, [-0.35, 1.7, 0.1], [0.1, 1, 0.1], [0.2, 0, 0.9]),
-    ]);
-    case 'mushtree': return merge([
-      part(G.cylLo, 0xd8d0c0, [0, 1.5, 0], [0.45, 3, 0.45]), part(G.sphLo, 0x4a3462, [0, 3.2, 0], [3, 1.4, 3]), part(G.sphLo, 0xb0f0ff, [0.6, 3.5, 0.6], [0.35, 0.25, 0.35]), part(G.sphLo, 0xb0f0ff, [-0.7, 3.3, 0.2], [0.3, 0.2, 0.3]),
-    ]);
+    case 'tree_pine': return merge(evergreen(0x1c3a2e, 0x2e2216));
+    case 'tree_pine_snow': return merge(evergreen(0x1c3a2e, 0x2e2216, true));
+    case 'tree_birch': return merge(lumpyTree(0x4e5a2a, 0x3e4a22, 0x4a3a28));
+    case 'tree_dead': {
+      const p: THREE.BufferGeometry[] = [];
+      const [x, y, z] = branch(p, 0x3a2c22, 0, 0, 0, 2.6, 0.2, 0.12, 0.15, 4, 0.22);
+      branch(p, 0x3a2c22, 0, 1.2, 0, 1.3, 0.08, 0.3, 1.1, 3, 0.4);
+      branch(p, 0x3a2c22, 0, 1.6, 0, 1.1, 0.07, -0.6, -1.0, 3, -0.4);
+      branch(p, 0x3a2c22, x, y, z, 0.8, 0.05, 0.9, 0.4, 2, 0.5);
+      return merge(p);
+    }
+    case 'mushtree': {
+      const p: THREE.BufferGeometry[] = [];
+      const [x, y, z] = branch(p, 0xb8ae98, 0, 0, 0, 3.2, 0.32, 0.15, 0.2, 3, -0.12);
+      p.push(part(G.sph, 0x4a3462, [x, y + 0.15, z], [3.3, 1.5, 3.1]));
+      p.push(part(G.cylLo, 0x2e2240, [x, y - 0.35, z], [2.6, 0.2, 2.4]));
+      for (let k = 0; k < 6; k++) p.push(part(G.sphLo, 0x80d8e8, [x + Math.sin(k * 1.9) * 1.1, y + 0.45, z + Math.cos(k * 1.9) * 1.0], [0.28, 0.16, 0.28]));
+      return merge(p);
+    }
     case 'palm': return merge([
       part(G.cylLo, 0x8a6a40, [0, 1.6, 0], [0.3, 3.2, 0.3], [0.1, 0, 0.05]),
       ...[0, 1.2, 2.4, 3.6, 4.8].map((a) => part(G.box, 0x4a8a3a, [Math.sin(a) * 0.9, 3.2, Math.cos(a) * 0.9], [0.4, 0.06, 1.8], [0.3, a, 0])),
     ]);
     case 'stump': return merge([part(G.cylLo, 0x3e2c1c, [0, 0.25, 0], [0.55, 0.5, 0.55]), part(G.cylLo, 0xc8a070, [0, 0.51, 0], [0.48, 0.02, 0.48])]);
-    case 'sapling': return merge([part(G.cylLo, 0x7a5a3a, [0, 0.4, 0], [0.06, 0.8, 0.06]), part(G.ico, 0x5a6a34, [0, 0.8, 0], [0.5, 0.4, 0.5]), part(G.cylLo, 0x7a5a3a, [0.15, 0.4, 0], [0.04, 0.6, 0.04], [0, 0, -0.5])]);
+    case 'sapling': { const p: THREE.BufferGeometry[] = []; for (let k = 0; k < 4; k++) branch(p, 0x5a4028, 0, 0, 0, 1.1, 0.04, Math.sin(k * 1.6) * 0.4, Math.cos(k * 1.6) * 0.4, 3, 0.35); p.push(part(G.ico, 0x4a5a2c, [0, 0.9, 0], [0.4, 0.3, 0.4])); return merge(p); }
     case 'sapling_picked': return merge([part(G.cylLo, 0x7a5a3a, [0, 0.15, 0], [0.06, 0.3, 0.06])]);
-    case 'grass': return merge([0, 1, 2, 3, 4].map((i) => part(G.coneLo, i % 2 ? 0x7a7a34 : 0x8a8a3c, [Math.sin(i * 1.3) * 0.15, 0.4, Math.cos(i * 1.3) * 0.15], [0.12, 0.8, 0.12], [Math.sin(i) * 0.3, 0, Math.cos(i) * 0.3])));
+    case 'grass': return merge([0, 1, 2, 3, 4, 5, 6].map((i) => part(G.coneLo, i % 2 ? 0x6e6a2c : 0x7e7834, [Math.sin(i * 1.3) * 0.18, 0.45, Math.cos(i * 1.3) * 0.18], [0.09, 0.95 + (i % 3) * 0.2, 0.09], [Math.sin(i) * 0.45, 0, Math.cos(i) * 0.45])));
     case 'grass_picked': return merge([0, 1, 2].map((i) => part(G.coneLo, 0x8a9a4a, [Math.sin(i * 2) * 0.12, 0.08, Math.cos(i * 2) * 0.12], [0.1, 0.16, 0.1])));
-    case 'berry_bush': return merge([part(G.ico, 0x2e4a26, [0, 0.5, 0], [1.1, 0.9, 1.1]), ...[0, 1, 2, 3, 4, 5].map((i) => part(G.sphLo, 0x3050c0, [Math.sin(i) * 0.45, 0.5 + (i % 3) * 0.15, Math.cos(i) * 0.45], [0.15, 0.15, 0.15]))]);
+    case 'berry_bush': return merge([part(G.ico, 0x2e4426, [0, 0.55, 0], [1.2, 1.0, 1.2]), part(G.ico, 0x263a20, [0.35, 0.4, 0.2], [0.8, 0.7, 0.8]), ...[0, 1, 2, 3, 4, 5, 6].map((i) => part(G.sphLo, 0x2a3a8a, [Math.sin(i * 0.9) * 0.5, 0.45 + (i % 3) * 0.17, Math.cos(i * 0.9) * 0.5], [0.15, 0.15, 0.15]))]);
     case 'berry_bush_empty': return merge([part(G.ico, 0x3e4a2e, [0, 0.5, 0], [1.1, 0.9, 1.1])]);
     case 'reeds': return merge([0, 1, 2, 3, 4, 5].map((i) => part(G.cylLo, 0x6a8a4a, [Math.sin(i * 1.7) * 0.25, 0.7, Math.cos(i * 1.7) * 0.25], [0.05, 1.4, 0.05])).concat([part(G.cylLo, 0x5a3a20, [0, 1.35, 0.1], [0.08, 0.3, 0.08])]));
     case 'reeds_picked': return merge([0, 1, 2].map((i) => part(G.cylLo, 0x6a8a4a, [Math.sin(i * 2) * 0.2, 0.15, Math.cos(i * 2) * 0.2], [0.05, 0.3, 0.05])));
@@ -137,7 +233,7 @@ function buildObj(t: string): THREE.BufferGeometry | null {
     case 'cactus': return merge([part(G.cylLo, 0x4a8a4a, [0, 0.8, 0], [0.45, 1.6, 0.45]), part(G.cylLo, 0x4a8a4a, [0.35, 1.0, 0], [0.22, 0.6, 0.22], [0, 0, -1.2]), part(G.cylLo, 0x4a8a4a, [0.55, 1.3, 0], [0.2, 0.5, 0.2]), part(G.sphLo, 0xf070a0, [0, 1.65, 0], [0.2, 0.15, 0.2])]);
     case 'cactus_picked': return merge([part(G.cylLo, 0x4a7a4a, [0, 0.4, 0], [0.4, 0.8, 0.4])]);
     case 'tumbleweed': return merge([part(G.ico, 0xb09060, [0, 0.4, 0], [0.8, 0.8, 0.8]), part(G.ico, 0x9a7a50, [0, 0.4, 0], [0.6, 0.6, 0.6], [0.5, 0.5, 0])]);
-    case 'boulder': return merge([part(G.dode, 0x8a8a8a, [0, 0.5, 0], [1.6, 1.2, 1.4]), part(G.dode, 0x7a7a7a, [0.5, 0.3, 0.3], [0.8, 0.6, 0.8])]);
+    case 'boulder': return merge([part(G.dode, 0x7a766e, [0, 0.55, 0], [1.7, 1.3, 1.5], [0.3, 0.5, 0.1]), part(G.dode, 0x6a665e, [0.55, 0.3, 0.35], [0.9, 0.6, 0.8]), part(G.box, 0x3a3630, [0.1, 0.9, 0.7], [0.05, 0.5, 0.05], [0.4, 0, 0.6])]);
     case 'boulder_gold': return merge([part(G.dode, 0x8a8478, [0, 0.5, 0], [1.6, 1.2, 1.4]), ...[0, 1, 2, 3].map((i) => part(G.oct, 0xf0c030, [Math.sin(i * 1.7) * 0.6, 0.6 + (i % 2) * 0.3, Math.cos(i * 1.7) * 0.55], [0.25, 0.25, 0.25]))]);
     case 'boulder_iron': return merge([part(G.dode, 0x6a6460, [0, 0.5, 0], [1.6, 1.2, 1.4]), ...[0, 1, 2, 3].map((i) => part(G.oct, 0xa05030, [Math.sin(i * 1.7) * 0.6, 0.6 + (i % 2) * 0.3, Math.cos(i * 1.7) * 0.55], [0.25, 0.25, 0.25]))]);
     case 'boulder_copper': return merge([part(G.dode, 0x7a7068, [0, 0.5, 0], [1.6, 1.2, 1.4]), ...[0, 1, 2, 3].map((i) => part(G.oct, 0xe08040, [Math.sin(i * 1.7) * 0.6, 0.6 + (i % 2) * 0.3, Math.cos(i * 1.7) * 0.55], [0.25, 0.25, 0.25]))]);
@@ -157,10 +253,19 @@ function buildObj(t: string): THREE.BufferGeometry | null {
     case 'guardian_spawn': return merge([part(G.box, 0x7a7060, [0, 0.4, 0], [1.4, 0.8, 1.4]), part(G.tor, 0x40d0e0, [0, 0.82, 0], [0.8, 0.8, 0.8], [Math.PI / 2, 0, 0])]);
     case 'pig_house': return merge([part(G.box, 0xc0a070, [0, 1, 0], [2.4, 2, 2.4]), part(G.coneLo, 0x8a3020, [0, 2.8, 0], [3.6, 1.8, 3.6]), part(G.box, 0x5a3a20, [0, 0.7, 1.21], [0.7, 1.3, 0.05]), part(G.box, 0xf0e080, [0.8, 1.3, 1.21], [0.4, 0.4, 0.05])]);
     case 'chicken_coop': return merge([part(G.tor, 0xb09060, [0, 0.15, 0], [0.8, 0.8, 0.8], [Math.PI / 2, 0, 0]), part(G.sphLo, 0xf0ead0, [0.1, 0.18, 0], [0.2, 0.25, 0.2]), part(G.sphLo, 0xf0ead0, [-0.15, 0.18, 0.1], [0.2, 0.25, 0.2])]);
-    case 'portal': return merge([
-      part(G.box, 0x6a6a70, [-2, 2, 0], [0.8, 4, 0.8]), part(G.box, 0x6a6a70, [2, 2, 0], [0.8, 4, 0.8]), part(G.box, 0x5a5a60, [0, 4.2, 0], [5.2, 0.8, 1]),
-      part(G.box, 0x50e0c0, [0, 4.2, 0.51], [1, 0.4, 0.02]), part(G.cylLo, 0x7a7a80, [0, 0.1, 0], [6, 0.2, 6]),
-    ]);
+    case 'portal': {
+      const p: THREE.BufferGeometry[] = [];
+      for (let k = 0; k <= 12; k++) {
+        const a = Math.PI * (k / 12);
+        const x = -Math.cos(a) * 2.3, y = Math.sin(a) * 3.6 + 0.4;
+        p.push(part(G.dode, k % 2 ? 0x5a5a5e : 0x4a4a50, [x, y, 0], [0.95 - Math.sin(a) * 0.25, 0.8, 0.9], [k, k * 0.7, 0]));
+        if (k % 3 === 0) p.push(part(G.coneLo, 0x3a3a3e, [x * 1.15, y + 0.3, 0], [0.25, 0.7, 0.25], [0, 0, -x * 0.25]));
+      }
+      p.push(part(G.cylLo, 0x55535a, [0, 0.12, 0], [6.4, 0.25, 4]));
+      p.push(part(G.box, 0x40d0a0, [0, 3.95, 0.42], [0.6, 0.3, 0.05]));
+      for (let k = 0; k < 5; k++) p.push(part(G.dode, 0x4e4c52, [Math.sin(k * 1.3) * 2.8, 0.3, Math.cos(k * 1.3) * 1.6], [0.5, 0.4, 0.5]));
+      return merge(p);
+    }
     case 'stone_circle': return merge([0, 1, 2, 3, 4, 5].map((i) => part(G.box, 0x7a7a80, [Math.sin((i / 6) * Math.PI * 2) * 3, 1, Math.cos((i / 6) * Math.PI * 2) * 3], [0.6, 2, 0.4], [0, (i / 6) * Math.PI * 2, 0])).concat([part(G.cylLo, 0x6a6a70, [0, 0.05, 0], [2.4, 0.1, 2.4])]));
     case 'shrine': return merge([part(G.box, 0x9a9080, [0, 0.4, 0], [1.4, 0.8, 1]), part(G.box, 0x8a8070, [0, 1.2, 0], [0.9, 0.8, 0.7]), part(G.coneLo, 0x6a3020, [0, 1.9, 0], [1.4, 0.7, 1.2], [0, Math.PI / 4, 0]), part(G.sphLo, 0xf0d060, [0, 1.25, 0.36], [0.25, 0.25, 0.1])]);
     case 'camp_chest': return merge([part(G.box, 0x7a5030, [0, 0.35, 0], [1, 0.7, 0.7]), part(G.box, 0xd0a030, [0, 0.4, 0.36], [0.2, 0.2, 0.02]), part(G.box, 0x6a4020, [0, 0.75, 0], [1.05, 0.12, 0.75])]);
@@ -178,6 +283,10 @@ function buildObj(t: string): THREE.BufferGeometry | null {
     case 'village_fire': return merge([...[0, 1, 2, 3, 4, 5, 6, 7].map((i) => part(G.dode, 0x7a7a7a, [Math.sin(i * 0.785) * 1, 0.15, Math.cos(i * 0.785) * 1], [0.4, 0.3, 0.4])), part(G.cylLo, 0x5a3a20, [0, 0.15, 0], [0.15, 1.2, 0.15], [0, 0, Math.PI / 2]), part(G.coneLo, 0xff9030, [0, 0.6, 0], [0.8, 1, 0.8])]);
     case 'tentacle_spot': return merge([part(G.cylLo, 0x2a3a2a, [0, 0.02, 0], [1.6, 0.04, 1.6]), part(G.sphLo, 0x4a5a4a, [0.2, 0.05, 0.3], [0.2, 0.1, 0.2])]);
     case 'beefalo_herd': return null;
+    case 'deco_tuft': return merge([0, 1, 2].map((i) => part(G.coneLo, 0x4a4a22, [Math.sin(i * 2.1) * 0.08, 0.15, Math.cos(i * 2.1) * 0.08], [0.06, 0.35, 0.06], [Math.sin(i) * 0.5, 0, Math.cos(i) * 0.5])));
+    case 'deco_pebble': return merge([part(G.dode, 0x5a564e, [0, 0.03, 0], [0.22, 0.12, 0.18]), part(G.dode, 0x4e4a44, [0.18, 0.02, 0.1], [0.12, 0.08, 0.12])]);
+    case 'deco_twig': return merge([part(G.cylLo, 0x3a2a1a, [0, 0.03, 0], [0.03, 0.6, 0.03], [0, 0.4, Math.PI / 2]), part(G.cylLo, 0x3a2a1a, [0.1, 0.03, 0.12], [0.02, 0.3, 0.02], [0, 1.4, Math.PI / 2])]);
+    case 'deco_skull': return merge([part(G.sphLo, 0xd0c8b0, [0, 0.1, 0], [0.22, 0.18, 0.26]), part(G.sphLo, 0x1a1612, [0.05, 0.12, 0.11], [0.05, 0.05, 0.03]), part(G.sphLo, 0x1a1612, [-0.05, 0.12, 0.11], [0.05, 0.05, 0.03])]);
   }
   return merge([part(G.box, 0xff00ff, [0, 0.3, 0], [0.6, 0.6, 0.6])]);
 }
@@ -483,14 +592,67 @@ export function makeMobRig(def: MobDef): Rig {
       rig.height = 1.2;
       break;
     }
-    case 'biped': case 'golem': case 'guardian': {
-      const big = def.model !== 'biped';
+    case 'golem': case 'guardian': if (def.id === 'treeguard') {
+      // chodzące drzewo: pień-tułów, korzenie-nogi, gałęzie-ręce, korona
+      const trunk = mesh(new THREE.CylinderGeometry(0.45, 0.65, 2.2, 8, 3), c, [0, 1.9, 0]);
+      body.add(trunk); rig.bodyMesh = trunk;
+      for (let k = 0; k < 5; k++) body.add(mesh(G.ico, k % 2 ? def.color2! : 0x24402a, [Math.sin(k * 1.3) * 0.7, 3.3 + (k % 2) * 0.4, Math.cos(k * 1.3) * 0.6 - 0.1], [1.3, 1.0, 1.3]));
+      const h = new THREE.Group(); h.position.set(0, 2.3, 0.45); body.add(h); rig.head = h;
+      eyes(h, 0, 0.05, 0.18, 0.12, 0xe8d040, 0x806000);
+      h.add(mesh(G.box, 0x1a120a, [0, -0.35, 0.05], [0.4, 0.12, 0.05]));
+      const mk = (sd: number) => {
+        const a = new THREE.Group(); a.position.set(sd * 0.55, 2.5, 0);
+        a.add(mesh(G.cylLo, c, [sd * 0.2, -0.6, 0], [0.22, 1.3, 0.22], [0, 0, sd * 0.3]));
+        a.add(mesh(G.cylLo, c, [sd * 0.45, -1.2, 0.1], [0.12, 0.6, 0.12], [0.4, 0, sd * 0.9]));
+        a.add(mesh(G.cylLo, c, [sd * 0.25, -1.3, -0.1], [0.1, 0.5, 0.1], [-0.4, 0, -sd * 0.4]));
+        body.add(a); return a;
+      };
+      rig.armL = mk(1); rig.armR = mk(-1);
+      for (const sd of [1, -1]) {
+        const l = new THREE.Group(); l.position.set(sd * 0.35, 0.9, 0);
+        l.add(mesh(G.coneLo, c, [0, -0.45, 0], [0.45, 1.0, 0.45], [Math.PI, 0, 0]));
+        l.add(mesh(G.cylLo, c, [sd * 0.3, -0.85, 0.2], [0.12, 0.6, 0.12], [0.5, 0, sd * 1.2]));
+        body.add(l); rig.legs.push(l);
+      }
+      rig.height = 4.2;
+      break;
+    } else {
+      // golemy z poskładanych kamieni / metalu z ruin
+      const stone = def.id === 'golem' ? c : c;
+      const torso = mesh(G.dode, stone, [0, 1.35, 0], [1.3, 1.25, 1.0]);
+      body.add(torso); rig.bodyMesh = torso;
+      body.add(mesh(G.dode, c2, [0, 1.0, 0.05], [0.9, 0.5, 0.8]));
+      if (def.model === 'guardian' || def.id === 'guardian') {
+        body.add(mesh(G.oct, def.color2!, [0, 1.45, 0.48], [0.35, 0.45, 0.12], [0, 0, 0], { emissive: 0x20a0b0 }));
+        for (const sd of [1, -1]) body.add(mesh(G.oct, 0x40f0ff, [sd * 0.6, 2.2, -0.2], [0.25, 0.7, 0.25], [0, 0, sd * 0.4], { emissive: 0x2090a0 }));
+      }
+      if (def.id === 'golem') body.add(mesh(G.ico, 0x4a6a3a, [0.2, 2.0, -0.1], [0.6, 0.3, 0.6]));
+      const h = new THREE.Group(); h.position.set(0, 2.2, 0.05); body.add(h); rig.head = h;
+      h.add(mesh(G.dode, stone, [0, 0, 0], [0.7, 0.6, 0.65]));
+      eyes(h, 0.05, 0.3, 0.15, 0.09, 0x40f0ff, 0x20a0b0);
+      const mk = (sd: number) => {
+        const a = new THREE.Group(); a.position.set(sd * 0.8, 1.85, 0);
+        a.add(mesh(G.dode, c2, [0, -0.25, 0], [0.5, 0.55, 0.5]));
+        a.add(mesh(G.dode, stone, [0, -0.8, 0.05], [0.45, 0.6, 0.45]));
+        a.add(mesh(G.dode, c2, [0, -1.25, 0.1], [0.55, 0.45, 0.55]));
+        body.add(a); return a;
+      };
+      rig.armL = mk(1); rig.armR = mk(-1);
+      for (const sd of [1, -1]) {
+        const l = new THREE.Group(); l.position.set(sd * 0.35, 0.85, 0);
+        l.add(mesh(G.dode, c2, [0, -0.3, 0], [0.5, 0.6, 0.5]));
+        l.add(mesh(G.dode, stone, [0, -0.7, 0.08], [0.55, 0.35, 0.65]));
+        body.add(l); rig.legs.push(l);
+      }
+      rig.height = 2.7;
+      break;
+    }
+    // eslint-disable-next-line no-fallthrough
+    case 'biped': {
+      const big = false as boolean;
       const torso = mesh(big ? G.box : new THREE.CapsuleGeometry(0.34, 0.45, 4, 8), c, [0, big ? 1.3 : 1.1, 0], big ? [1.1, 1.1, 0.8] : [1, 1, 1]);
       body.add(torso); rig.bodyMesh = torso;
       if (def.id === 'elder') body.add(mesh(G.cone, c2, [0, 0.8, 0], [1, 1.3, 1]));
-      if (def.model === 'guardian' || def.id === 'guardian') { body.add(mesh(G.oct, def.color2!, [0, 1.4, 0.42], [0.3, 0.4, 0.1], [0, 0, 0], { emissive: 0x20a0b0 })); }
-      if (def.id === 'treeguard') { body.add(mesh(G.ico, def.color2!, [0, 2.3, 0], [1.8, 1.2, 1.6])); }
-      if (def.model === 'guardian') for (const s of [1, -1]) body.add(mesh(G.oct, 0x40f0ff, [s * 0.6, 2.1, -0.2], [0.25, 0.6, 0.25], [0, 0, s * 0.4], { emissive: 0x2090a0 }));
       const h = new THREE.Group(); h.position.set(0, big ? 2.1 : 1.75, 0); body.add(h); rig.head = h;
       if (def.id === 'pigman' || def.id === 'elder') {
         h.add(mesh(G.sph, c, [0, 0, 0], [0.75, 0.7, 0.7]));
@@ -620,12 +782,19 @@ export function makeMobRig(def: MobDef): Rig {
       break;
     }
   }
+  // dodatki "z charakterem"
+  if (def.id === 'spider' || def.id === 'spider_warrior' || def.id === 'queen') for (let k = 0; k < 10; k++) body.add(mesh(G.coneLo, c, [Math.sin(k * 2.4) * 0.35, 0.9 + (k % 3) * 0.12, -0.45 + Math.cos(k * 2.4) * 0.35], [0.06, 0.22, 0.06], [Math.cos(k) * 0.6, 0, Math.sin(k) * 0.6]));
+  if (def.id === 'hound') for (let k = 0; k < 5; k++) body.add(mesh(G.coneLo, 0x1a1410, [0, 1.0, 0.4 - k * 0.22], [0.1, 0.35, 0.1], [-0.4, 0, 0]));
+  if (def.id === 'beefalo') for (let k = 0; k < 8; k++) body.add(mesh(G.ico, c2, [Math.sin(k * 0.8) * 0.45, 1.05 + (k % 2) * 0.12, 0.3 - k * 0.12], [0.42, 0.32, 0.42]));
+  if (def.id === 'pigman' || def.id === 'elder') body.add(mesh(G.sph, c, [0, 1.0, 0.12], [0.75, 0.7, 0.62]));
+  if (def.model === 'shadow') { /* cienie zostają gładkie */ } else organic(root, def.boss ? 0.09 : 0.07, 0.05, def.id.length);
   return rig;
 }
 
 // =====================================================================
 // Budowle
 // =====================================================================
+const STRUCT_SMOOTH = new Set(['floor_wood', 'floor_cobble', 'floor_carpet', 'planted_tree', 'farm', 'escape_portal']);
 export interface StructModel { g: THREE.Group; anim?: THREE.Object3D[]; flame?: THREE.Object3D; glow?: THREE.Mesh[]; plant?: THREE.Group; door?: THREE.Object3D; head?: THREE.Object3D }
 
 export function makeStruct(type: string): StructModel {
@@ -839,6 +1008,7 @@ export function makeStruct(type: string): StructModel {
     }
     default: add(G.box, 0xff00ff, [0, 0.5, 0], [1, 1, 1]);
   }
+  if (!STRUCT_SMOOTH.has(type)) organic(g, 0.06, 0.035, type.length);
   return res;
 }
 

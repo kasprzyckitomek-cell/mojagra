@@ -63,7 +63,7 @@ label.chk input { width: auto; }
 .char { background: var(--paper2); border: 3px solid #b09060; border-radius: 10px; padding: 10px; cursor: pointer; text-align: center; font-size: 13px; transition: transform .1s; }
 .char:hover { transform: translateY(-2px); }
 .char.sel { border-color: #c06020; background: #f8e8c0; box-shadow: 0 0 0 3px #e8a040; }
-.char img { width: 120px; height: 142px; display: block; margin: 0 auto; }
+.char img { width: 130px; height: 154px; display: block; margin: 0 auto; filter: sepia(.3) contrast(1.15) saturate(.75) drop-shadow(1px 0 0 #120e0a) drop-shadow(-1px 0 0 #120e0a) drop-shadow(0 1px 0 #120e0a) drop-shadow(0 -1px 0 #120e0a); }
 .char b { display: block; font: bold 16px var(--title); }
 .char i { display: block; opacity: 0.7; margin-bottom: 6px; }
 .char .perk { color: #2a6a2a; } .char .flaw { color: #8a2a2a; } .cstats { margin-top: 4px; }
