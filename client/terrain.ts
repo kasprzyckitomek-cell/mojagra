@@ -7,11 +7,11 @@ import type { Season } from '../shared/env';
 
 const SEG = 16;
 const BIOME_COL: Record<Biome, number[]> = {
-  ocean: [0x2a5a7a], beach: [0xe2cf94, 0xd8c486], grass: [0x7fb24a, 0x8cbc52, 0x74a842], forest: [0x3f7a3a, 0x477f3e, 0x386e33],
-  swamp: [0x4a5a3a, 0x52603e, 0x3e4e34], rocky: [0x8a8478, 0x958e80, 0x7c766c], savanna: [0xc8b45a, 0xd2bc62, 0xbaa64e],
-  desert: [0xe4c880, 0xead08a, 0xdcbe74], mushroom: [0x5a4a7a, 0x645484, 0x52426e], ruins: [0x7a7468, 0x6e685e, 0x86806e],
+  ocean: [0x22404e], beach: [0xb09a6c, 0xa69064], grass: [0x5c6a2c, 0x66722f, 0x535f28], forest: [0x2f3d22, 0x354325, 0x2a3620],
+  swamp: [0x343e28, 0x3a4229, 0x2e3623], rocky: [0x6a645a, 0x726b5e, 0x5f5a50], savanna: [0x9a8846, 0xa4904c, 0x8e7e40],
+  desert: [0xbfa16a, 0xc6a871, 0xb59762], mushroom: [0x3c3250, 0x443858, 0x352c48], ruins: [0x5a5448, 0x524c42, 0x625b4e],
 };
-const SEASON_TINT: Record<Season, [number, number, number]> = { autumn: [1.12, 0.95, 0.75], winter: [1, 1, 1], spring: [0.95, 1.08, 0.95], summer: [1.1, 1.05, 0.8] };
+const SEASON_TINT: Record<Season, [number, number, number]> = { autumn: [1.18, 0.92, 0.65], winter: [1, 1, 1], spring: [0.92, 1.08, 0.92], summer: [1.2, 1.08, 0.72] };
 
 export class Terrain {
   group = new THREE.Group();
@@ -25,7 +25,7 @@ export class Terrain {
     scene.add(this.group);
     const wg = new THREE.PlaneGeometry(900, 900, 60, 60);
     wg.rotateX(-Math.PI / 2);
-    this.water = new THREE.Mesh(wg, new THREE.MeshPhongMaterial({ color: 0x2a6a9a, transparent: true, opacity: 0.82, shininess: 80, specular: 0x8ac0e0, flatShading: true }));
+    this.water = new THREE.Mesh(wg, new THREE.MeshPhongMaterial({ color: 0x1e3a48, transparent: true, opacity: 0.88, shininess: 40, specular: 0x506a70, flatShading: true }));
     this.water.position.y = -0.05;
     this.water.receiveShadow = false;
     scene.add(this.water);
@@ -41,7 +41,7 @@ export class Terrain {
     }
     if (this.season === 'winter' && b !== 'ocean' && b !== 'desert') {
       const snow = b === 'beach' ? 0.5 : 0.85;
-      c.lerp(new THREE.Color(0xf2f6fa), snow);
+      c.lerp(new THREE.Color(0xd8dcd8), snow);
     } else if (b !== 'ocean') {
       const t = SEASON_TINT[this.season];
       if (b === 'grass' || b === 'forest' || b === 'savanna' || b === 'swamp') { c.r *= t[0]; c.g *= t[1]; c.b *= t[2]; }

@@ -71,7 +71,7 @@ export class World {
     this.mapAll = new Uint8Array(Math.ceil((cells * cells) / 8));
     if (state) this.load(state);
     else {
-      this.time = settings.dayLength * 0.04;
+      this.time = settings.dayLength * 0.09;
       this.nextRaid = settings.dayLength * (4.6 + Math.random());
       this.weather.next = settings.dayLength * (1 + Math.random());
     }

@@ -111,9 +111,7 @@ export class UI {
       (me.st || []).map((s: string) => `<span class="bad">${({ freeze: '🧊 Zamrożony', web: '🕸 Sieć', slow: '🐌 Spowolniony', burn: '🔥 Płoniesz', stun: '💫 Ogłuszony' } as any)[s] || s}</span>`).join('') +
       (me.wolf ? '<span>🐺 Wilk</span>' : '') + (me.sl ? '<span>💤 Śpisz</span>' : '');
     const san = me.sa / me.msa;
-    const fx = $('.sanity-fx', this.root);
-    fx.style.opacity = san < 0.4 ? String((0.4 - san) * 2) : '0';
-    this.game.renderer.domElement.style.filter = san < 0.3 ? `saturate(${0.3 + san * 2}) hue-rotate(${(0.3 - san) * 60}deg)` : '';
+    void san;
     const dead = $('.dead', this.root);
     if (me.g) {
       dead.classList.remove('hidden');
@@ -499,6 +497,7 @@ export class UI {
       <label>Muzyka <input type="range" min="0" max="1" step="0.05" value="${s.music}" data-k="music"></label>
       <label>Jakość grafiki <select data-k="quality"><option value="low" ${s.quality === 'low' ? 'selected' : ''}>Niska (bez cieni)</option><option value="medium" ${s.quality === 'medium' ? 'selected' : ''}>Średnia</option><option value="high" ${s.quality === 'high' ? 'selected' : ''}>Wysoka</option></select></label>
       <label>Zasięg widzenia <input type="range" min="3" max="6" step="1" value="${s.view}" data-k="view"></label>
+      <label><input type="checkbox" data-k="ink" ${s.ink !== false ? 'checked' : ''}> Styl ilustracji (tuszowe obrysy, ziarno)</label>
       <label><input type="checkbox" data-k="fps" ${s.fps ? 'checked' : ''}> Pokaż panel debug (F3)</label>
       <p class="small">Świat: <b>${esc(this.game.worldInfo.name)}</b> · kod zaproszenia: <b class="code">${esc(this.game.worldInfo.id)}</b> (podaj go znajomym)</p>
       <div class="dclose"><button class="btn quit">Wyjdź do menu</button> <button class="btn ok">Zamknij</button></div>`);
@@ -605,7 +604,7 @@ export class UI {
     c.width = c.height = N;
     const ctx = c.getContext('2d')!;
     const img = ctx.createImageData(N, N);
-    const col: Record<string, number[]> = { ocean: [40, 80, 120], beach: [226, 207, 148], grass: [127, 178, 74], forest: [55, 110, 52], swamp: [74, 90, 58], rocky: [138, 132, 120], savanna: [200, 180, 90], desert: [228, 200, 128], mushroom: [100, 80, 130], ruins: [110, 104, 94] };
+    const col: Record<string, number[]> = { ocean: [44, 66, 74], beach: [176, 154, 108], grass: [102, 112, 50], forest: [52, 66, 38], swamp: [58, 66, 44], rocky: [116, 108, 96], savanna: [164, 144, 76], desert: [196, 166, 110], mushroom: [70, 58, 88], ruins: [96, 90, 78] };
     for (let j = 0; j < N; j++)
       for (let i = 0; i < N; i++) {
         const x = (i + 0.5) / N * g.size, z = (j + 0.5) / N * g.size;

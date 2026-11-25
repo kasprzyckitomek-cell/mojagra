@@ -9,7 +9,7 @@ import type { MobDef } from '../shared/data/mobs';
 let gradient: THREE.DataTexture | null = null;
 function gradientMap() {
   if (!gradient) {
-    const d = new Uint8Array([90, 90, 90, 255, 170, 170, 170, 255, 255, 255, 255, 255]);
+    const d = new Uint8Array([60, 60, 60, 255, 150, 150, 150, 255, 255, 255, 255, 255]);
     gradient = new THREE.DataTexture(d, 3, 1, THREE.RGBAFormat);
     gradient.minFilter = gradient.magFilter = THREE.NearestFilter;
     gradient.needsUpdate = true;
@@ -88,7 +88,7 @@ export function objGeometry(t: string): THREE.BufferGeometry | null {
   return g;
 }
 
-function pineTree(leaf: number, trunk = 0x6b4a2b) {
+function pineTree(leaf: number, trunk = 0x3e2c1c) {
   return [
     part(G.cylLo, trunk, [0, 0.9, 0], [0.35, 1.8, 0.35]),
     part(G.coneLo, leaf, [0, 2.3, 0], [2.4, 2.2, 2.4]),
@@ -99,35 +99,35 @@ function pineTree(leaf: number, trunk = 0x6b4a2b) {
 
 function buildObj(t: string): THREE.BufferGeometry | null {
   switch (t) {
-    case 'tree_pine': return merge(pineTree(0x2f6b3a));
-    case 'tree_pine_snow': return merge([...pineTree(0x2f6b3a), part(G.coneLo, 0xf4f8ff, [0, 4.75, 0], [0.9, 0.9, 0.9]), part(G.coneLo, 0xf4f8ff, [0, 3.75, 0], [1.3, 0.5, 1.3])]);
+    case 'tree_pine': return merge(pineTree(0x1f3d2c));
+    case 'tree_pine_snow': return merge([...pineTree(0x1f3d2c), part(G.coneLo, 0xf4f8ff, [0, 4.75, 0], [0.9, 0.9, 0.9]), part(G.coneLo, 0xf4f8ff, [0, 3.75, 0], [1.3, 0.5, 1.3])]);
     case 'tree_birch': return merge([
-      part(G.cylLo, 0xeae6da, [0, 1.3, 0], [0.3, 2.6, 0.3]), part(G.box, 0x333333, [0.12, 1.0, 0], [0.08, 0.1, 0.32]), part(G.box, 0x333333, [-0.1, 1.8, 0.05], [0.08, 0.08, 0.3]),
-      part(G.ico, 0x6aa84f, [0, 3.2, 0], [2.4, 2.0, 2.4]), part(G.ico, 0x7cbc5a, [0.6, 3.8, 0.3], [1.5, 1.3, 1.5]), part(G.ico, 0x5e9a46, [-0.5, 2.8, -0.4], [1.4, 1.2, 1.4]),
+      part(G.cylLo, 0xc8c0ac, [0, 1.3, 0], [0.3, 2.6, 0.3]), part(G.box, 0x333333, [0.12, 1.0, 0], [0.08, 0.1, 0.32]), part(G.box, 0x333333, [-0.1, 1.8, 0.05], [0.08, 0.08, 0.3]),
+      part(G.ico, 0x4e6230, [0, 3.2, 0], [2.4, 2.0, 2.4]), part(G.ico, 0x5a6e36, [0.6, 3.8, 0.3], [1.5, 1.3, 1.5]), part(G.ico, 0x44582a, [-0.5, 2.8, -0.4], [1.4, 1.2, 1.4]),
     ]);
     case 'tree_dead': return merge([
       part(G.cylLo, 0x5a4636, [0, 1.2, 0], [0.3, 2.4, 0.3]), part(G.cylLo, 0x5a4636, [0.4, 2.1, 0], [0.12, 1.2, 0.12], [0, 0, -0.8]), part(G.cylLo, 0x5a4636, [-0.35, 1.7, 0.1], [0.1, 1, 0.1], [0.2, 0, 0.9]),
     ]);
     case 'mushtree': return merge([
-      part(G.cylLo, 0xd8d0c0, [0, 1.5, 0], [0.45, 3, 0.45]), part(G.sphLo, 0x6a4a9a, [0, 3.2, 0], [3, 1.4, 3]), part(G.sphLo, 0xb0f0ff, [0.6, 3.5, 0.6], [0.35, 0.25, 0.35]), part(G.sphLo, 0xb0f0ff, [-0.7, 3.3, 0.2], [0.3, 0.2, 0.3]),
+      part(G.cylLo, 0xd8d0c0, [0, 1.5, 0], [0.45, 3, 0.45]), part(G.sphLo, 0x4a3462, [0, 3.2, 0], [3, 1.4, 3]), part(G.sphLo, 0xb0f0ff, [0.6, 3.5, 0.6], [0.35, 0.25, 0.35]), part(G.sphLo, 0xb0f0ff, [-0.7, 3.3, 0.2], [0.3, 0.2, 0.3]),
     ]);
     case 'palm': return merge([
       part(G.cylLo, 0x8a6a40, [0, 1.6, 0], [0.3, 3.2, 0.3], [0.1, 0, 0.05]),
       ...[0, 1.2, 2.4, 3.6, 4.8].map((a) => part(G.box, 0x4a8a3a, [Math.sin(a) * 0.9, 3.2, Math.cos(a) * 0.9], [0.4, 0.06, 1.8], [0.3, a, 0])),
     ]);
-    case 'stump': return merge([part(G.cylLo, 0x6b4a2b, [0, 0.25, 0], [0.55, 0.5, 0.55]), part(G.cylLo, 0xc8a070, [0, 0.51, 0], [0.48, 0.02, 0.48])]);
-    case 'sapling': return merge([part(G.cylLo, 0x7a5a3a, [0, 0.4, 0], [0.06, 0.8, 0.06]), part(G.ico, 0x6aa04a, [0, 0.8, 0], [0.5, 0.4, 0.5]), part(G.cylLo, 0x7a5a3a, [0.15, 0.4, 0], [0.04, 0.6, 0.04], [0, 0, -0.5])]);
+    case 'stump': return merge([part(G.cylLo, 0x3e2c1c, [0, 0.25, 0], [0.55, 0.5, 0.55]), part(G.cylLo, 0xc8a070, [0, 0.51, 0], [0.48, 0.02, 0.48])]);
+    case 'sapling': return merge([part(G.cylLo, 0x7a5a3a, [0, 0.4, 0], [0.06, 0.8, 0.06]), part(G.ico, 0x5a6a34, [0, 0.8, 0], [0.5, 0.4, 0.5]), part(G.cylLo, 0x7a5a3a, [0.15, 0.4, 0], [0.04, 0.6, 0.04], [0, 0, -0.5])]);
     case 'sapling_picked': return merge([part(G.cylLo, 0x7a5a3a, [0, 0.15, 0], [0.06, 0.3, 0.06])]);
-    case 'grass': return merge([0, 1, 2, 3, 4].map((i) => part(G.coneLo, i % 2 ? 0x8aaa3a : 0x9aba4a, [Math.sin(i * 1.3) * 0.15, 0.4, Math.cos(i * 1.3) * 0.15], [0.12, 0.8, 0.12], [Math.sin(i) * 0.3, 0, Math.cos(i) * 0.3])));
+    case 'grass': return merge([0, 1, 2, 3, 4].map((i) => part(G.coneLo, i % 2 ? 0x7a7a34 : 0x8a8a3c, [Math.sin(i * 1.3) * 0.15, 0.4, Math.cos(i * 1.3) * 0.15], [0.12, 0.8, 0.12], [Math.sin(i) * 0.3, 0, Math.cos(i) * 0.3])));
     case 'grass_picked': return merge([0, 1, 2].map((i) => part(G.coneLo, 0x8a9a4a, [Math.sin(i * 2) * 0.12, 0.08, Math.cos(i * 2) * 0.12], [0.1, 0.16, 0.1])));
-    case 'berry_bush': return merge([part(G.ico, 0x3a7a3a, [0, 0.5, 0], [1.1, 0.9, 1.1]), ...[0, 1, 2, 3, 4, 5].map((i) => part(G.sphLo, 0x3050c0, [Math.sin(i) * 0.45, 0.5 + (i % 3) * 0.15, Math.cos(i) * 0.45], [0.15, 0.15, 0.15]))]);
-    case 'berry_bush_empty': return merge([part(G.ico, 0x4a6a3a, [0, 0.5, 0], [1.1, 0.9, 1.1])]);
+    case 'berry_bush': return merge([part(G.ico, 0x2e4a26, [0, 0.5, 0], [1.1, 0.9, 1.1]), ...[0, 1, 2, 3, 4, 5].map((i) => part(G.sphLo, 0x3050c0, [Math.sin(i) * 0.45, 0.5 + (i % 3) * 0.15, Math.cos(i) * 0.45], [0.15, 0.15, 0.15]))]);
+    case 'berry_bush_empty': return merge([part(G.ico, 0x3e4a2e, [0, 0.5, 0], [1.1, 0.9, 1.1])]);
     case 'reeds': return merge([0, 1, 2, 3, 4, 5].map((i) => part(G.cylLo, 0x6a8a4a, [Math.sin(i * 1.7) * 0.25, 0.7, Math.cos(i * 1.7) * 0.25], [0.05, 1.4, 0.05])).concat([part(G.cylLo, 0x5a3a20, [0, 1.35, 0.1], [0.08, 0.3, 0.08])]));
     case 'reeds_picked': return merge([0, 1, 2].map((i) => part(G.cylLo, 0x6a8a4a, [Math.sin(i * 2) * 0.2, 0.15, Math.cos(i * 2) * 0.2], [0.05, 0.3, 0.05])));
     case 'flowers': return merge([0, 1, 2, 3].map((i) => [part(G.cylLo, 0x4a8a3a, [Math.sin(i * 1.6) * 0.25, 0.2, Math.cos(i * 1.6) * 0.25], [0.03, 0.4, 0.03]), part(G.sphLo, [0xf05080, 0xf0d040, 0xa060f0, 0xffffff][i], [Math.sin(i * 1.6) * 0.25, 0.42, Math.cos(i * 1.6) * 0.25], [0.16, 0.1, 0.16])]).flat());
     case 'flint': return merge([part(G.oct, 0x505868, [0, 0.12, 0], [0.3, 0.25, 0.22], [0.3, 0.5, 0])]);
     case 'rocks': return merge([part(G.dode, 0x8a8a88, [0, 0.1, 0], [0.3, 0.2, 0.3]), part(G.dode, 0x7a7a78, [0.25, 0.08, 0.1], [0.2, 0.15, 0.2])]);
-    case 'carrot': return merge([part(G.coneLo, 0x4a9a3a, [0, 0.25, 0], [0.25, 0.4, 0.25]), part(G.coneLo, 0xe07a20, [0, 0.05, 0], [0.15, 0.15, 0.15], [Math.PI, 0, 0])]);
+    case 'carrot': return merge([part(G.coneLo, 0x4a6a2a, [0, 0.25, 0], [0.25, 0.4, 0.25]), part(G.coneLo, 0xe07a20, [0, 0.05, 0], [0.15, 0.15, 0.15], [Math.PI, 0, 0])]);
     case 'mushroom': return merge([part(G.cylLo, 0xf0e8d8, [0, 0.12, 0], [0.1, 0.24, 0.1]), part(G.sphLo, 0xc03020, [0, 0.26, 0], [0.32, 0.18, 0.32]), part(G.sphLo, 0xffffff, [0.08, 0.32, 0.05], [0.06, 0.04, 0.06])]);
     case 'glowcap': return merge([part(G.cylLo, 0xd0f0f0, [0, 0.35, 0], [0.1, 0.7, 0.1]), part(G.sphLo, 0x80f0ff, [0, 0.72, 0], [0.5, 0.28, 0.5])]);
     case 'glowcap_picked': return merge([part(G.cylLo, 0xa0c0c0, [0, 0.25, 0], [0.1, 0.5, 0.1])]);
@@ -214,85 +214,128 @@ function addOutline(m: THREE.Mesh, rig: Rig, scale = 1.07) {
   (rig.outlines = rig.outlines || []).push(o);
 }
 
-export const SKIN_TINTS = [0, 0x3060c0, 0x9a2050];
+export const SKIN_TINTS = [0, 0x2a3a5a, 0x5a1a2a];
 
 export function makeCharacter(c: CharDef, skin = 0): Rig {
+  // Styl "mrocznej bajki": wielka blada głowa, czarne oczy, cienkie kończyny, ciemne ubranie.
   const root = new THREE.Group();
   const normal = new THREE.Group();
   root.add(normal);
   const body = new THREE.Group();
   normal.add(body);
   const cloth = skin ? SKIN_TINTS[skin] || c.cloth : c.cloth;
-  const rig: Rig = { root, body, legs: [], kind: 'char', height: 2.1, normal };
-  const torso = mesh(new THREE.CapsuleGeometry(0.3, 0.42, 4, 8), cloth, [0, 1.08, 0]);
-  addOutline(torso, rig, 1.08);
+  const ink = 0x16120e;
+  const rig: Rig = { root, body, legs: [], kind: 'char', height: 2.3, normal };
+  // tułów – wąski, lekko trapezowy
+  const torso = mesh(new THREE.CylinderGeometry(0.2, 0.3, 0.72, 8), cloth, [0, 1.12, 0]);
+  addOutline(torso, rig, 1.1);
   body.add(torso);
   rig.bodyMesh = torso;
-  body.add(mesh(G.cyl, c.cloth2, [0, 0.92, 0], [0.64, 0.12, 0.64]));
+  body.add(mesh(G.cyl, c.cloth2, [0, 0.8, 0], [0.62, 0.14, 0.5]));            // pas/spódnica kurtki
+  body.add(mesh(G.cone, c.cloth2, [0, 1.42, 0.08], [0.46, 0.18, 0.3], [0.2, 0, 0])); // kołnierz
+  body.add(mesh(G.cylLo, c.skin, [0, 1.52, 0], [0.12, 0.18, 0.12]));          // szyja
   const head = new THREE.Group();
-  head.position.set(0, 1.68, 0);
+  head.position.set(0, 1.92, 0);
   body.add(head);
   rig.head = head;
-  const hm = mesh(G.sph, c.skin, [0, 0, 0], [0.78, 0.76, 0.74]);
+  const hm = mesh(G.sph, c.skin, [0, 0, 0], [1.0, 0.94, 0.88]);
   addOutline(hm, rig, 1.06);
   head.add(hm);
-  head.add(mesh(G.sphLo, 0x1a1410, [0.13, 0.03, 0.34], [0.08, 0.11, 0.05]));
-  head.add(mesh(G.sphLo, 0x1a1410, [-0.13, 0.03, 0.34], [0.08, 0.11, 0.05]));
-  head.add(mesh(G.sphLo, 0xffffff, [0.15, 0.06, 0.36], [0.025, 0.03, 0.02]));
-  head.add(mesh(G.sphLo, 0xffffff, [-0.11, 0.06, 0.36], [0.025, 0.03, 0.02]));
-  head.add(mesh(G.sph, c.hair, [0, 0.14, -0.04], [0.82, 0.6, 0.78]));
+  // duże czarne oczy, bez białek
+  head.add(mesh(G.sphLo, ink, [0.16, 0.06, 0.4], [0.14, 0.22, 0.06], [-0.25, 0.3, 0]));
+  head.add(mesh(G.sphLo, ink, [-0.16, 0.06, 0.4], [0.14, 0.22, 0.06], [-0.25, -0.3, 0]));
+  head.add(mesh(G.box, ink, [0, -0.22, 0.41], [0.12, 0.025, 0.02]));          // usta
+  head.add(mesh(G.coneLo, c.skin, [0, -0.08, 0.45], [0.05, 0.09, 0.05], [1.5, 0, 0])); // nosek
+  // włosy – nastroszone kolce
+  const spikes = (n: number, h: number, spread: number, y = 0.3) => {
+    // gęsta czupryna na czubku i z tyłu głowy + nastroszone kolce (twarz zostaje odsłonięta)
+    head.add(mesh(G.sph, c.hair, [0, 0.2, -0.06], [1.04, 0.72, 0.98]));
+    for (let i = 0; i < n; i++) {
+      const a = Math.PI * 0.55 + (i / Math.max(1, n - 1)) * Math.PI * 0.9; // tylko z tyłu i po bokach
+      const dx = Math.sin(a), dz = Math.cos(a);
+      head.add(mesh(G.coneLo, c.hair, [dx * spread, y + 0.1, dz * spread], [0.26, h, 0.26], [dz * 0.9, 0, -dx * 0.9]));
+    }
+    for (let i = 0; i < 3; i++) head.add(mesh(G.coneLo, c.hair, [(i - 1) * 0.18, y + 0.28, -0.02 - Math.abs(i - 1) * 0.08], [0.28, h * 1.25, 0.28], [-0.25, 0, (1 - i) * 0.35]));
+  };
   switch (c.feature) {
-    case 'beard': head.add(mesh(G.cone, c.hair, [0, -0.32, 0.22], [0.5, 0.55, 0.3], [Math.PI + 0.3, 0, 0])); break;
-    case 'hood': head.add(mesh(G.cone, c.cloth, [0, 0.3, -0.12], [0.95, 0.9, 0.95], [-0.3, 0, 0])); break;
-    case 'helmet': head.add(mesh(G.sph, 0x6a7a5a, [0, 0.16, 0], [0.88, 0.55, 0.86])); head.add(mesh(G.box, 0x8a3030, [0.25, -0.05, 0.3], [0.04, 0.25, 0.02], [0, 0, 0.3])); break;
-    case 'lantern': head.add(mesh(G.cyl, c.hair, [0, -0.2, -0.38], [0.12, 0.55, 0.12], [0.4, 0, 0])); break;
-    case 'goggles': head.add(mesh(G.tor, 0x6a4a20, [0.14, 0.22, 0.3], [0.2, 0.2, 0.3])); head.add(mesh(G.tor, 0x6a4a20, [-0.14, 0.22, 0.3], [0.2, 0.2, 0.3])); head.add(mesh(G.cyl, 0x80d0ff, [0.14, 0.22, 0.31], [0.14, 0.02, 0.14], [Math.PI / 2, 0, 0])); head.add(mesh(G.cyl, 0x80d0ff, [-0.14, 0.22, 0.31], [0.14, 0.02, 0.14], [Math.PI / 2, 0, 0])); break;
-    case 'ears': head.add(mesh(G.cone, c.hair, [0.25, 0.42, 0], [0.18, 0.3, 0.12], [0, 0, -0.3])); head.add(mesh(G.cone, c.hair, [-0.25, 0.42, 0], [0.18, 0.3, 0.12], [0, 0, 0.3])); break;
+    case 'beard':
+      spikes(6, 0.5, 0.36);
+      head.add(mesh(G.cone, c.hair, [0, -0.38, 0.22], [0.62, 0.62, 0.36], [Math.PI + 0.35, 0, 0]));
+      head.add(mesh(G.box, c.hair, [0, -0.13, 0.42], [0.3, 0.06, 0.06]));   // wąsy
+      break;
+    case 'hood':
+      head.add(mesh(G.sph, c.hair, [0, 0.16, -0.14], [0.95, 0.6, 0.78]));
+      head.add(mesh(G.cone, c.cloth, [0, 0.36, -0.15], [1.05, 1.05, 1.05], [-0.35, 0, 0]));
+      head.add(mesh(G.coneLo, c.cloth, [0, 0.95, -0.55], [0.18, 0.5, 0.18], [-1.1, 0, 0]));
+      break;
+    case 'helmet':
+      head.add(mesh(G.sph, 0x4a4c3c, [0, 0.18, 0], [1.02, 0.6, 0.96]));
+      head.add(mesh(G.cyl, 0x4a4c3c, [0, 0.12, 0.02], [1.12, 0.05, 1.05]));
+      head.add(mesh(G.box, 0x7a2a22, [0.24, -0.08, 0.39], [0.03, 0.26, 0.02], [0, 0, 0.35])); // blizna
+      break;
+    case 'lantern':
+      spikes(4, 0.3, 0.36, 0.2);
+      head.add(mesh(G.cylLo, c.hair, [0, -0.35, -0.45], [0.14, 0.7, 0.14], [0.45, 0, 0])); // warkocz
+      head.add(mesh(G.sphLo, c.hair, [0, -0.7, -0.6], [0.16, 0.16, 0.16]));
+      break;
+    case 'goggles':
+      spikes(5, 0.35, 0.36);
+      head.add(mesh(G.cyl, 0x3a2a18, [0, 0.24, 0], [1.02, 0.08, 0.92]));
+      for (const sx of [0.17, -0.17]) {
+        head.add(mesh(G.tor, 0x5a4020, [sx, 0.26, 0.38], [0.22, 0.22, 0.3]));
+        head.add(mesh(G.cyl, 0xb0a070, [sx, 0.26, 0.4], [0.16, 0.02, 0.16], [Math.PI / 2, 0, 0], { emissive: 0x201808 }));
+      }
+      break;
+    case 'ears':
+      spikes(8, 0.6, 0.38);
+      head.add(mesh(G.cone, c.hair, [0.3, 0.5, 0], [0.2, 0.42, 0.12], [0, 0, -0.35]));
+      head.add(mesh(G.cone, c.hair, [-0.3, 0.5, 0], [0.2, 0.42, 0.12], [0, 0, 0.35]));
+      break;
   }
   if (c.feature === 'lantern') {
-    const lan = mesh(G.box, 0xffe070, [0.3, 0.88, 0.15], [0.14, 0.18, 0.14], [0, 0, 0], { emissive: 0xffa020 });
-    body.add(lan);
+    body.add(mesh(G.cylLo, 0x2a2420, [0.3, 0.95, 0.15], [0.03, 0.15, 0.03]));
+    body.add(mesh(G.box, 0xffd070, [0.3, 0.82, 0.15], [0.14, 0.18, 0.14], [0, 0, 0], { emissive: 0xff9010 }));
   }
   rig.headTop = new THREE.Group();
-  rig.headTop.position.set(0, 0.25, 0);
+  rig.headTop.position.set(0, 0.3, 0);
   head.add(rig.headTop);
   const mkArm = (side: number) => {
     const a = new THREE.Group();
-    a.position.set(side * 0.38, 1.33, 0);
-    const am = mesh(G.cylLo, cloth, [0, -0.25, 0], [0.16, 0.5, 0.16]);
-    a.add(am);
-    a.add(mesh(G.sphLo, c.skin, [0, -0.52, 0], [0.17, 0.17, 0.17]));
+    a.position.set(side * 0.27, 1.42, 0);
+    a.add(mesh(G.cylLo, cloth, [0, -0.3, 0], [0.11, 0.6, 0.11]));
+    a.add(mesh(G.sphLo, c.skin, [0, -0.64, 0], [0.13, 0.13, 0.13]));
     body.add(a);
     return a;
   };
   rig.armL = mkArm(1);
   rig.armR = mkArm(-1);
   rig.hand = new THREE.Group();
-  rig.hand.position.set(0, -0.55, 0.05);
+  rig.hand.position.set(0, -0.66, 0.05);
   rig.armR.add(rig.hand);
   rig.back = new THREE.Group();
-  rig.back.position.set(0, 1.1, -0.32);
+  rig.back.position.set(0, 1.12, -0.3);
   body.add(rig.back);
   for (const side of [1, -1]) {
     const l = new THREE.Group();
-    l.position.set(side * 0.15, 0.78, 0);
-    l.add(mesh(G.cylLo, c.cloth2, [0, -0.3, 0], [0.19, 0.6, 0.19]));
-    l.add(mesh(G.box, 0x3a2a1a, [0, -0.66, 0.06], [0.22, 0.12, 0.32]));
+    l.position.set(side * 0.11, 0.78, 0);
+    l.add(mesh(G.cylLo, c.cloth2, [0, -0.36, 0], [0.13, 0.72, 0.13]));
+    l.add(mesh(G.box, ink, [0, -0.74, 0.08], [0.16, 0.1, 0.34]));
     normal.add(l);
     rig.legs.push(l);
   }
   // duch
   const ghost = new THREE.Group();
-  const gm = toon(0xe8f0ff, { opacity: 0.55, emissive: 0x223344 });
-  const gb = new THREE.Mesh(G.cone, gm); gb.scale.set(0.9, 1.4, 0.9); gb.position.y = 1.0; gb.rotation.x = Math.PI; ghost.add(gb);
-  const gh = new THREE.Mesh(G.sph, gm); gh.scale.setScalar(0.85); gh.position.y = 1.75; ghost.add(gh);
-  ghost.add(mesh(G.sphLo, 0x101020, [0.14, 1.8, 0.36], [0.1, 0.14, 0.05]));
-  ghost.add(mesh(G.sphLo, 0x101020, [-0.14, 1.8, 0.36], [0.1, 0.14, 0.05]));
+  const gm = toon(0xd8dde8, { opacity: 0.6, emissive: 0x1a2030 });
+  const gb = new THREE.Mesh(G.cone, gm); gb.scale.set(0.9, 1.5, 0.9); gb.position.y = 1.05; gb.rotation.x = Math.PI; ghost.add(gb);
+  const gh = new THREE.Mesh(G.sph, gm); gh.scale.setScalar(0.95); gh.position.y = 1.85; ghost.add(gh);
+  ghost.add(mesh(G.sphLo, ink, [0.15, 1.88, 0.4], [0.11, 0.17, 0.05]));
+  ghost.add(mesh(G.sphLo, ink, [-0.15, 1.88, 0.4], [0.11, 0.17, 0.05]));
+  ghost.add(mesh(G.sphLo, ink, [0, 1.65, 0.42], [0.1, 0.12, 0.04]));
   ghost.visible = false;
   root.add(ghost);
   rig.ghost = ghost;
   if (c.werewolf) {
-    const wolf = makeMobRig({ model: 'quad', color: 0x8a3a1a, color2: 0x2a1a10, scale: 1.1, id: 'wolf' } as any);
+    const wolf = makeMobRig({ model: 'quad', color: 0x5a2a14, color2: 0x1a120c, scale: 1.1, id: 'wolf' } as any);
     wolf.root.visible = false;
     root.add(wolf.root);
     rig.wolf = wolf;
@@ -807,7 +850,7 @@ export function setFarmPlant(sm: StructModel, plant: string | undefined, growth:
   const stage = growth >= 1 ? 3 : growth > 0.5 ? 2 : 1;
   for (let i = 0; i < 4; i++) {
     const x = (i % 2) * 0.8 - 0.4, z = Math.floor(i / 2) * 0.8 - 0.4;
-    pl.add(mesh(G.coneLo, 0x4a9a3a, [x, 0.2 + stage * 0.12, z], [0.25 * stage, 0.4 * stage, 0.25 * stage]));
+    pl.add(mesh(G.coneLo, 0x4a6a2a, [x, 0.2 + stage * 0.12, z], [0.25 * stage, 0.4 * stage, 0.25 * stage]));
     if (stage === 3) pl.add(mesh(plant === 'pumpkin' ? G.sph : G.sphLo, plantColors[plant] || 0xffffff, [x + 0.1, 0.3, z + 0.1], plant === 'pumpkin' ? [0.45, 0.35, 0.45] : [0.2, 0.2, 0.2]));
   }
 }

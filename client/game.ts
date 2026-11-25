@@ -15,13 +15,16 @@ import { UI } from './ui';
 import { Net } from './net';
 import { audio } from './audio';
 import { makeStruct } from './models';
+import { Post } from './post';
 
 type Target = { k: 'o' | 's' | 'm' | 'd' | 'p'; id: number; alt?: boolean; once?: boolean };
 
-export interface Settings { vol: number; music: number; quality: 'low' | 'medium' | 'high'; view: number; fps: boolean }
+export interface Settings { vol: number; music: number; quality: 'low' | 'medium' | 'high'; view: number; fps: boolean; ink: boolean }
 
 export class Game {
   renderer: THREE.WebGLRenderer;
+  post!: Post;
+  lightLevel = 1;
   scene = new THREE.Scene();
   camera: THREE.PerspectiveCamera;
   gen: WorldGen;
@@ -80,7 +83,7 @@ export class Game {
     this.char = welcome.char;
     this.worldInfo = welcome.world;
     this.flags = welcome.flags;
-    this.settings = Object.assign({ vol: 0.6, music: 0.35, quality: 'medium', view: 5, fps: false }, JSON.parse(localStorage.getItem('wm_settings') || '{}'));
+    this.settings = Object.assign({ vol: 0.6, music: 0.35, quality: 'medium', view: 5, fps: false, ink: true }, JSON.parse(localStorage.getItem('wm_settings') || '{}'));
     this.gen = new WorldGen(welcome.seed, welcome.size, welcome.resources);
     const cells = Math.ceil(welcome.size / 16);
     this.mapBits = new Uint8Array(Math.ceil((cells * cells) / 8));
@@ -95,11 +98,12 @@ export class Game {
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.domElement.className = 'game-canvas';
     document.body.appendChild(this.renderer.domElement);
+    this.post = new Post(this.renderer);
     this.camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.5, 400);
     this.scene.fog = new THREE.Fog(0x9fc6e0, 70, 170);
     this.scene.background = new THREE.Color(0x9fc6e0);
 
-    this.hemi = new THREE.HemisphereLight(0xdfefff, 0x5a4a30, 0.6);
+    this.hemi = new THREE.HemisphereLight(0xd8d4c0, 0x3a2e20, 0.6);
     this.scene.add(this.hemi);
     this.amb = new THREE.AmbientLight(0xffffff, 0.15);
     this.scene.add(this.amb);
@@ -133,6 +137,7 @@ export class Game {
     };
     window.addEventListener('resize', () => {
       this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.post.resize();
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
     });
@@ -150,6 +155,7 @@ export class Game {
     this.sun.castShadow = q !== 'low';
     this.sun.shadow.mapSize.set(q === 'high' ? 2048 : 1024, q === 'high' ? 2048 : 1024);
     if (this.sun.shadow.map) { this.sun.shadow.map.dispose(); (this.sun.shadow as any).map = null; }
+    if (this.post) { this.post.resize(); this.post.enabled = this.settings.ink !== false; }
     audio.setVolume(this.settings.vol, this.settings.music);
     const far = 40 + this.settings.view * 26;
     (this.scene.fog as THREE.Fog).far = far;
@@ -723,8 +729,9 @@ export class Game {
     else if (frac < ph[1]) light = 1 - ((frac - ph[0]) / (ph[1] - ph[0])) * 0.85;
     else light = Math.max(0, 0.15 - Math.min(1, (frac - ph[1]) / 0.05) * 0.15);
     const fullMoon = this.env.moon === 5;
-    const day = new THREE.Color(se === 'winter' ? 0xc8d8e8 : se === 'summer' ? 0xb8d8f0 : se === 'autumn' ? 0xb8c8d0 : 0xa8d0ec);
-    const dusk = new THREE.Color(0xd08a6a), night = new THREE.Color(fullMoon ? 0x1a2440 : 0x080a14);
+    this.lightLevel = light;
+    const day = new THREE.Color(se === 'winter' ? 0xb4b8b4 : se === 'summer' ? 0xb0a47e : se === 'autumn' ? 0x9c9478 : 0x8e9a80);
+    const dusk = new THREE.Color(0x8a5238), night = new THREE.Color(fullMoon ? 0x141a2a : 0x040508);
     let sky: THREE.Color;
     if (light > 0.6) sky = night.clone().lerp(dusk, 1).lerp(day, (light - 0.6) / 0.4);
     else sky = night.clone().lerp(dusk, light / 0.6);
@@ -741,7 +748,7 @@ export class Game {
     const ang = frac * Math.PI * 2;
     const sunUp = light > 0.2;
     this.sun.intensity = sunUp ? 0.25 + light * 1.25 : fullMoon ? 0.35 : 0.04;
-    this.sun.color.setHex(sunUp ? (light < 0.8 ? 0xffb080 : 0xfff2d8) : 0x8090c0);
+    this.sun.color.setHex(sunUp ? (light < 0.8 ? 0xff9a60 : 0xffe6c0) : 0x7080b0);
     const sx = Math.cos(ang) * 50, sy = 60 + Math.sin(ang) * 20;
     this.sun.position.set(this.me.x + sx, sy, this.me.z + 30);
     this.sun.target.position.set(this.me.x, 0, this.me.z);
@@ -845,7 +852,11 @@ export class Game {
       }
     }
     if (now - this.lastMini > 250) { this.lastMini = now; this.ui.drawMinimap(); }
-    this.renderer.render(this.scene, this.camera);
+    const san = this.stats.msa ? this.stats.sa / this.stats.msa : 1;
+    const u = this.post.mat.uniforms;
+    u.insanity.value += ((san < 0.4 ? (0.4 - san) / 0.4 : 0) - u.insanity.value) * Math.min(1, dt * 2);
+    u.night.value = Math.max(0, 1 - this.lightLevel * 1.4) * 0.6;
+    this.post.render(this.scene, this.camera, this.t);
     // debug
     this.fpsAcc += dt; this.fpsN++;
     if (this.fpsAcc > 0.5) {
