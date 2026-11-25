@@ -76,7 +76,8 @@ const Q: QuestDef[] = [
     goals: [
       { k: 'visit', t: 'forest', n: 1, label: 'Las iglasty' }, { k: 'visit', t: 'swamp', n: 1, label: 'Bagna' }, { k: 'visit', t: 'rocky', n: 1, label: 'Kamienne pustkowia' },
       { k: 'visit', t: 'savanna', n: 1, label: 'Sawanna' }, { k: 'visit', t: 'desert', n: 1, label: 'Pustynia' }, { k: 'visit', t: 'mushroom', n: 1, label: 'Grzybowy las' },
-      { k: 'visit', t: 'beach', n: 1, label: 'Wybrzeże' }, { k: 'visit', t: 'ruins', n: 1, label: 'Ruiny' }],
+      { k: 'visit', t: 'beach', n: 1, label: 'Wybrzeże' }, { k: 'visit', t: 'ruins', n: 1, label: 'Ruiny' },
+      { k: 'visit', t: 'birchwood', n: 1, label: 'Las brzozowy' }, { k: 'visit', t: 'heath', n: 1, label: 'Wrzosowisko' }, { k: 'visit', t: 'autumnwood', n: 1, label: 'Czerwony las' }, { k: 'visit', t: 'tundra', n: 1, label: 'Śnieżna tundra' }],
     rewards: { items: [['compass', 1], ['big_backpack', 1]] } },
   { id: 'ex_notes', title: 'Zapiski poprzedników', type: 'explore', scope: 'player', desc: 'Na wyspie leżą notatki ludzi, którzy byli tu przed wami. Przeczytaj 6 z nich.',
     goals: [{ k: 'read', t: 'note', n: 6, label: 'Przeczytaj notatki' }], rewards: { items: [['blueprint:multitool', 1], ['essence', 2]] } },

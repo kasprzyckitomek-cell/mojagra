@@ -16,7 +16,7 @@ test('generator świata jest deterministyczny i ma wszystkie biomy', () => {
   assert.deepEqual(a.spawn, b.spawn);
   assert.deepEqual(a.chunkObjects(20, 20), b.chunkObjects(20, 20));
   const biomes = new Set(a.cells.map((c) => c.b));
-  for (const x of ['grass', 'forest', 'swamp', 'rocky', 'savanna', 'desert', 'mushroom', 'ruins']) assert.ok(biomes.has(x as any), x);
+  for (const x of ['grass', 'forest', 'swamp', 'rocky', 'savanna', 'desert', 'mushroom', 'ruins', 'birchwood', 'heath', 'autumnwood', 'tundra']) assert.ok(biomes.has(x as any), x);
   assert.ok(a.height(a.spawn.x, a.spawn.z) > 0, 'spawn na lądzie');
   for (const t of ['portal', 'village_fire', 'ancient_core', 'queen_nest', 'storm_nest', 'titan_lair', 'mole_mound']) assert.ok(a.pois.some((p) => p.type === t), t);
   assert.equal(a.pois.filter((p) => p.type === 'stone_circle').length, 4);

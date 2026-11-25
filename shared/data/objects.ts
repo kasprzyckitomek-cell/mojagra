@@ -21,6 +21,7 @@ export interface ObjDef {
 export const OBJ: Record<string, ObjDef> = {
   tree_pine: { name: 'Sosna', verb: 'Zetnij', tool: 'chop', work: 6, drops: [['log', 2, 1], ['log', 1, 0.5], ['pinecone', 1, 0.6]], after: 'stump', regrow: 8, block: 0.5 },
   tree_birch: { name: 'Brzoza', verb: 'Zetnij', tool: 'chop', work: 5, drops: [['log', 2, 1], ['pinecone', 1, 0.4], ['petals', 1, 0.2]], after: 'stump', regrow: 8, block: 0.45 },
+  tree_maple: { name: 'Klon', verb: 'Zetnij', tool: 'chop', work: 6, drops: [['log', 2, 1], ['log', 1, 0.5], ['pinecone', 1, 0.5], ['petals', 1, 0.15]], after: 'stump', regrow: 8, block: 0.5 },
   tree_dead: { name: 'Uschnięte drzewo', verb: 'Zetnij', tool: 'chop', work: 3, drops: [['log', 1, 1], ['twig', 1, 1]], after: 'remove', regrow: 15, block: 0.4 },
   mushtree: { name: 'Grzybodrzew', verb: 'Zetnij', tool: 'chop', work: 6, drops: [['log', 2, 1], ['mushroom', 1, 1], ['glowberry', 1, 0.2]], after: 'stump', regrow: 10, block: 0.6, light: 4 },
   palm: { name: 'Palma', verb: 'Zetnij', tool: 'chop', work: 5, drops: [['log', 2, 1], ['twig', 1, 1]], after: 'stump', regrow: 10, block: 0.4 },
@@ -28,6 +29,7 @@ export const OBJ: Record<string, ObjDef> = {
   sapling: { name: 'Krzaczek', verb: 'Zbierz', work: 1, drops: [['twig', 2, 1]], after: 'picked', regrow: 4 },
   grass: { name: 'Kępa trawy', verb: 'Zetnij', work: 1, drops: [['grass', 1, 1], ['grass', 1, 0.3]], after: 'picked', regrow: 3 },
   berry_bush: { name: 'Krzak jagód', verb: 'Zbierz', work: 1, drops: [['berries', 3, 1]], after: 'picked', regrow: 4, winterNo: true },
+  heather: { name: 'Wrzos', verb: 'Zbierz', work: 1, drops: [['petals', 1, 1], ['twig', 1, 0.6]], after: 'picked', regrow: 3, sanity: 3 },
   reeds: { name: 'Trzcina', verb: 'Zbierz', work: 1, drops: [['reeds', 1, 1]], after: 'picked', regrow: 5 },
   flowers: { name: 'Kwiaty', verb: 'Zerwij', work: 1, drops: [['petals', 1, 1]], after: 'picked', regrow: 3, sanity: 5 },
   flint: { name: 'Krzemień', verb: 'Podnieś', work: 1, drops: [['flint', 1, 1]], after: 'picked', regrow: 8 },
@@ -83,6 +85,7 @@ export const OBJ: Record<string, ObjDef> = {
 export const BIOME_NAMES: Record<string, string> = {
   ocean: 'Ocean', beach: 'Wybrzeże', grass: 'Łąki', forest: 'Las iglasty', swamp: 'Bagna', rocky: 'Kamienne pustkowia',
   savanna: 'Sawanna', desert: 'Pustynia', mushroom: 'Grzybowy las', ruins: 'Ruiny Prastarych',
+  birchwood: 'Las brzozowy', heath: 'Wrzosowisko', autumnwood: 'Czerwony las', tundra: 'Śnieżna tundra',
 };
 
 // Tabele losowania obiektów na biom: [typ, waga]
@@ -94,6 +97,10 @@ export const BIOME_TABLES: Record<string, [string, number][]> = {
   savanna: [['grass', 22], ['beefalo_herd', 0.22], ['rabbit_hole', 2], ['flint', 2], ['tree_birch', 1], ['carrot', 1], ['rocks', 1], ['_', 24]],
   desert: [['cactus', 8], ['boulder', 2], ['scorpion_burrow', 0.6], ['tumbleweed', 3], ['sand', 4], ['clay', 2], ['boulder_copper', 1], ['bones', 0.6], ['tree_dead', 1], ['_', 30]],
   mushroom: [['mushtree', 20], ['mushroom', 6], ['glowcap', 4], ['bat_cave', 0.35], ['crystal_node', 2.2], ['grass', 1], ['_', 18]],
+  birchwood: [['tree_birch', 28], ['sapling', 6], ['grass', 7], ['flowers', 5], ['mushroom', 2], ['berry_bush', 2.5], ['rabbit_hole', 0.6], ['carrot', 1], ['_', 14]],
+  heath: [['heather', 16], ['grass', 5], ['boulder', 2], ['flint', 3], ['rocks', 2], ['tree_dead', 1.5], ['gobbler_nest', 0.25], ['chicken_coop', 0.35], ['berry_bush', 1], ['_', 22]],
+  autumnwood: [['tree_maple', 26], ['berry_bush', 3], ['mushroom', 2.5], ['sapling', 5], ['spider_den', 0.35], ['flowers', 1], ['grass', 3], ['_', 14]],
+  tundra: [['tree_pine', 7], ['boulder', 4], ['flint', 3], ['rocks', 2], ['grass', 3], ['rabbit_hole', 0.8], ['beefalo_herd', 0.15], ['crystal_node', 0.6], ['bones', 0.4], ['_', 28]],
   beach: [['driftwood', 3], ['crab_den', 0.6], ['flint', 2], ['reeds', 1], ['sand', 4], ['palm', 2], ['rocks', 2], ['_', 34]],
   ruins: [['ruin_pillar', 4], ['ruin_rubble', 5], ['guardian_spawn', 0.5], ['crystal_node', 0.8], ['bones', 0.6], ['_', 26]],
 };

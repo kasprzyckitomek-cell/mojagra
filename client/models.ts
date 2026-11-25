@@ -144,7 +144,7 @@ export function objGeometry(t: string): THREE.BufferGeometry | null {
 
 const WOB: Record<string, number> = {
   boulder: 0.22, boulder_gold: 0.2, boulder_iron: 0.2, boulder_copper: 0.2, boulder_coal: 0.2, crystal_node: 0.05, mole_mound: 0.35, queen_nest: 0.3,
-  tree_pine: 0.12, tree_pine_snow: 0.12, tree_birch: 0.14, mushtree: 0.12, spider_den: 0.25, ruin_pillar: 0.1, portal: 0.08, stone_circle: 0.1,
+  tree_pine: 0.12, tree_pine_snow: 0.12, tree_birch: 0.12, tree_maple: 0.14, heather: 0.03, mushtree: 0.12, spider_den: 0.25, ruin_pillar: 0.1, portal: 0.08, stone_circle: 0.1,
   grass: 0.03, flowers: 0.02, flint: 0.03, note: 0, titan_lair: 0.1, rabbit_hole: 0.05, deco_tuft: 0.02, deco_pebble: 0.05, deco_twig: 0.02,
 };
 function evergreen(leaf: number, trunk: number, snow = false) {
@@ -190,7 +190,19 @@ function buildObj(t: string): THREE.BufferGeometry | null {
   switch (t) {
     case 'tree_pine': return merge(evergreen(0x1c3a2e, 0x2e2216));
     case 'tree_pine_snow': return merge(evergreen(0x1c3a2e, 0x2e2216, true));
-    case 'tree_birch': return merge(lumpyTree(0x4e5a2a, 0x3e4a22, 0x4a3a28));
+    case 'tree_birch': {
+      // brzoza: jasny, cętkowany pień i jasnozielona korona
+      const p: THREE.BufferGeometry[] = [];
+      const [x, y, z] = branch(p, 0xd8d2c2, 0, 0, 0, 3.0, 0.17, 0.06, -0.08, 3, 0.1);
+      for (let k = 0; k < 6; k++) p.push(part(G.box, 0x1e1a16, [Math.sin(k * 2.1) * 0.12, 0.4 + k * 0.42, Math.cos(k * 2.1) * 0.12], [0.12, 0.05, 0.12]));
+      branch(p, 0xc8c0ae, 0, 1.8, 0, 0.9, 0.06, 0.3, 0.8, 2, 0.3);
+      const blobs = [[0, 0.4, 0, 1.3], [0.6, 0.0, 0.3, 0.9], [-0.55, 0.1, -0.2, 0.95], [0.1, 1.0, -0.1, 0.85]];
+      blobs.forEach(([bx, by, bz, r], i) => p.push(part(G.ico, i % 2 ? 0x6a8a34 : 0x5c7a2e, [x + bx, y + by, z + bz], [r * 1.2, r * 1.15, r * 1.2], [i, i * 2, 0])));
+      return merge(p);
+    }
+    case 'tree_maple': return merge(lumpyTree(0xa84a1c, 0x8a2e16, 0x3e2a1c));
+    case 'heather': return merge([part(G.ico, 0x3a4228, [0, 0.25, 0], [0.8, 0.5, 0.8]), ...[0, 1, 2, 3, 4, 5, 6, 7].map((i) => part(G.coneLo, i % 2 ? 0x8a4a8a : 0x9a5aa0, [Math.sin(i * 0.8) * 0.3, 0.5, Math.cos(i * 0.8) * 0.3], [0.1, 0.35, 0.1], [Math.sin(i) * 0.4, 0, Math.cos(i) * 0.4]))]);
+    case 'heather_picked': return merge([part(G.ico, 0x3a4228, [0, 0.2, 0], [0.7, 0.4, 0.7])]);
     case 'tree_dead': {
       const p: THREE.BufferGeometry[] = [];
       const [x, y, z] = branch(p, 0x3a2c22, 0, 0, 0, 2.6, 0.2, 0.12, 0.15, 4, 0.22);

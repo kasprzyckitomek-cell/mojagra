@@ -568,6 +568,7 @@ export class World {
     let t = n + (d - n) * l;
     const b = this.gen.biome(x, z);
     if (b === 'desert') t += 10;
+    if (b === 'tundra') t -= 16;
     if (b === 'swamp' || b === 'mushroom') t -= 3;
     if (this.weather.kind !== 'clear') t -= 8 * this.weather.i;
     return t;

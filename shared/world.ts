@@ -4,7 +4,7 @@ import { mulberry32, hash3, pickWeighted, smoothstep } from './rng';
 import { BIOME_TABLES, OBJ } from './data/objects';
 
 export const CHUNK = 32;
-export type Biome = 'ocean' | 'beach' | 'grass' | 'forest' | 'swamp' | 'rocky' | 'savanna' | 'desert' | 'mushroom' | 'ruins';
+export type Biome = 'ocean' | 'beach' | 'grass' | 'forest' | 'swamp' | 'rocky' | 'savanna' | 'desert' | 'mushroom' | 'ruins' | 'birchwood' | 'heath' | 'autumnwood' | 'tundra';
 
 export interface StaticObj {
   id: number;
@@ -104,7 +104,7 @@ export class WorldGen {
       }
     const c = this.size / 2;
     pts.sort((a, b) => (a.x - c) ** 2 + (a.z - c) ** 2 - ((b.x - c) ** 2 + (b.z - c) ** 2));
-    const base: Biome[] = ['forest', 'savanna', 'rocky', 'swamp', 'mushroom', 'desert'];
+    const base: Biome[] = ['forest', 'savanna', 'rocky', 'swamp', 'mushroom', 'desert', 'birchwood', 'heath', 'autumnwood', 'tundra'];
     const order: Biome[] = [];
     while (order.length < pts.length + 8) {
       const extra: Biome[] = [...base, 'forest', 'grass'];
@@ -120,7 +120,7 @@ export class WorldGen {
       this.cells.push({ x: p.x, z: p.z, b });
     });
     // gwarancja obecności każdego biomu
-    const need: Biome[] = ['forest', 'savanna', 'rocky', 'swamp', 'mushroom', 'desert'];
+    const need: Biome[] = ['forest', 'savanna', 'rocky', 'swamp', 'mushroom', 'desert', 'birchwood', 'heath', 'autumnwood', 'tundra'];
     for (const b of need) {
       if (!this.cells.some((c) => c.b === b) && this.cells.length > 2) {
         const counts = new Map<Biome, number>();

@@ -604,7 +604,7 @@ export class UI {
     c.width = c.height = N;
     const ctx = c.getContext('2d')!;
     const img = ctx.createImageData(N, N);
-    const col: Record<string, number[]> = { ocean: [44, 66, 74], beach: [176, 154, 108], grass: [102, 112, 50], forest: [52, 66, 38], swamp: [58, 66, 44], rocky: [116, 108, 96], savanna: [164, 144, 76], desert: [196, 166, 110], mushroom: [70, 58, 88], ruins: [96, 90, 78] };
+    const col: Record<string, number[]> = { ocean: [44, 66, 74], beach: [176, 154, 108], grass: [102, 112, 50], forest: [52, 66, 38], swamp: [58, 66, 44], rocky: [116, 108, 96], savanna: [164, 144, 76], desert: [196, 166, 110], mushroom: [70, 58, 88], ruins: [96, 90, 78], birchwood: [118, 150, 60], heath: [118, 92, 104], autumnwood: [150, 104, 46], tundra: [170, 180, 170] };
     for (let j = 0; j < N; j++)
       for (let i = 0; i < N; i++) {
         const x = (i + 0.5) / N * g.size, z = (j + 0.5) / N * g.size;
